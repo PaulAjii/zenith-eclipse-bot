@@ -1,6 +1,6 @@
 import { Document } from '@langchain/core/documents';
 import { Annotation, StateGraph } from '@langchain/langgraph';
-import { ChatOpenAI } from '@langchain/openai';
+// import { ChatOpenAI } from '@langchain/openai';
 
 import { vectorStore } from './dbconfig';
 import { llm } from './embedding';

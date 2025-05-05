@@ -5,7 +5,7 @@ import fs from 'fs';
 import path from 'path';
 import 'dotenv/config';
 
-import { vectorStore } from '../db/config.js';
+import { vectorStore } from '../db/config';
 import { identifyDocumentCategory } from './categoryUtils.js';
 
 // Verbose logging for diagnostic purposes
@@ -58,7 +58,7 @@ async function seedDocumentsWithMetadata() {
       console.log('MongoDB connection successful');
     }
 
-    const DATA_DIR = './src/db/data';
+    const DATA_DIR = './db/data';
     console.log(`Looking for documents in directory: ${DATA_DIR}`);
     
     // Check if directory exists

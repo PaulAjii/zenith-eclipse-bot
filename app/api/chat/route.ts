@@ -2,12 +2,32 @@ import { NextResponse } from 'next/server';
 import { graph } from '@/scripts/rag';
 import { sessionManager } from '@/utils/sessionManager';
 import { logInteraction } from '@/utils/analytics';
-import { identifyQuestionCategory, evaluateContextRelevance } from '@/utils/categoryUtils';
+import { Document } from '@langchain/core/documents';
 
 interface ChatRequest {
 	prompt: string;
 	sessionId?: string,
 	windowSize?: number
+}
+
+// Define a type for the token usage data
+interface TokenUsage {
+	promptTokens: number;
+	completionTokens: number;
+	totalTokens: number;
+}
+
+// Define a type for the graph response
+interface GraphResponse {
+	finalAnswer?: string;
+	answer: string;
+	context?: Document[];
+	needsHumanAssistance?: boolean;
+	category?: string;
+	contextRelevance?: number;
+	llmOutput?: {
+		tokenUsage?: TokenUsage;
+	};
 }
 
 export async function POST(req: Request) {
@@ -41,7 +61,7 @@ export async function POST(req: Request) {
 			question: prompt.trim(),
 			history: history,
 			sessionId: session.sessionId
-		});
+		}) as GraphResponse;
 
 		// Calculate response time for analytics
 		const responseTime = Date.now() - startTime
@@ -54,7 +74,7 @@ export async function POST(req: Request) {
 
 		// Extract token usage if available from the LLM output
 		// Access it safely through the result object
-		const tokenUsage = (response as any).llmOutput?.tokenUsage || {
+		const tokenUsage = response.llmOutput?.tokenUsage || {
 			promptTokens: 0,
 			completionTokens: 0,
 			totalTokens: 0

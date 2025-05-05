@@ -15,6 +15,10 @@ export default function Page() {
 	const handleSubmit = async (e: React.FormEvent, prompt: string) => {
 		try {
 			e.preventDefault();
+			
+			// Don't submit if already loading or if input is empty
+			if (isLoading || !prompt.trim()) return;
+			
 			setIsLoading(true);
 			const newMessage: Message = {
 				role: 'user',
@@ -81,10 +85,12 @@ export default function Page() {
 								autoFocus
 								value={input}
 								onChange={(e) => setInput(e.target.value)}
+								disabled={isLoading}
 							/>
 							<button
 								type="submit"
-								className="submit__button"
+								className={`submit__button ${isLoading ? 'disabled' : ''}`}
+								disabled={isLoading}
 							>
 								&gt;
 							</button>
