@@ -28,7 +28,7 @@ export default function Page() {
 				headers: {
 					'Content-Type': 'application/json',
 				},
-				body: prompt,
+				body: JSON.stringify({prompt: prompt}),
 			});
 
 			if (!res.ok) {
@@ -36,7 +36,6 @@ export default function Page() {
 			}
 
 			const data = await res.json();
-			console.log(data);
 
 			const assistantMessage: Message = {
 				role: 'assistant',
@@ -63,9 +62,9 @@ export default function Page() {
 							content="Hello, how can I help you?"
 							role="assistant"
 						/>
-						{messages.map((message) => (
+						{messages.map((message, index) => (
 							<ChatBubble
-								key={`message-${message.id}`}
+								key={`message-${index}`}
 								content={message.content}
 								role={message.role}
 							/>
