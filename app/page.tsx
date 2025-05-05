@@ -1,95 +1,102 @@
-import Image from "next/image";
-import styles from "./page.module.css";
+'use client';
 
-export default function Home() {
-  return (
-    <div className={styles.page}>
-      <main className={styles.main}>
-        <Image
-          className={styles.logo}
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol>
-          <li>
-            Get started by editing <code>app/page.tsx</code>.
-          </li>
-          <li>Save and see your changes instantly.</li>
-        </ol>
+import { useState } from 'react';
+import { Message } from 'ai';
 
-        <div className={styles.ctas}>
-          <a
-            className={styles.primary}
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className={styles.logo}
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-            className={styles.secondary}
-          >
-            Read our docs
-          </a>
-        </div>
-      </main>
-      <footer className={styles.footer}>
-        <a
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
-    </div>
-  );
+import Header from './components/Header';
+import ChatBubble from './components/ChatBubble';
+import LoadingBubble from './components/LoadingBubble';
+
+export default function Page() {
+	const [isLoading, setIsLoading] = useState(false);
+	const [messages, setMessages] = useState<Message[]>([]);
+	const [input, setInput] = useState('');
+
+	const handleSubmit = async (e: React.FormEvent, prompt: string) => {
+		try {
+			e.preventDefault();
+			setIsLoading(true);
+			const newMessage: Message = {
+				role: 'user',
+				content: prompt,
+				id: String(messages.length + 1),
+			};
+			setMessages((prev) => [...prev, newMessage]);
+
+			const res = await fetch('api/chat', {
+				method: 'POST',
+				headers: {
+					'Content-Type': 'application/json',
+				},
+				body: prompt,
+			});
+
+			if (!res.ok) {
+				throw new Error('Failed to fetch response');
+			}
+
+			const data = await res.json();
+			console.log(data);
+
+			const assistantMessage: Message = {
+				role: 'assistant',
+				content: data.message,
+				id: data._id,
+			};
+
+			setMessages((prev) => [...prev, assistantMessage]);
+			setInput('');
+		} catch (err) {
+			console.log(err);
+		} finally {
+			setIsLoading(false);
+		}
+	};
+
+	return (
+		<>
+			<Header />
+			<main>
+				<div className="container">
+					<section className="chat__container">
+						<ChatBubble
+							content="Hello, how can I help you?"
+							role="assistant"
+						/>
+						{messages.map((message) => (
+							<ChatBubble
+								key={`message-${message.id}`}
+								content={message.content}
+								role={message.role}
+							/>
+						))}
+						{isLoading && <LoadingBubble />}
+					</section>
+					<div className="input__container">
+						<form onSubmit={(e) => handleSubmit(e, input)}>
+							<input
+								type="text"
+								placeholder="Ask me anything..."
+								className="input__field"
+								autoComplete="off"
+								autoFocus
+								value={input}
+								onChange={(e) => setInput(e.target.value)}
+							/>
+							<button
+								type="submit"
+								className="submit__button"
+							>
+								&gt;
+							</button>
+						</form>
+
+						<div className="action__btns">
+							This is the action buttons
+						</div>
+					</div>
+				</div>
+			</main>
+		</>
+	);
 }
