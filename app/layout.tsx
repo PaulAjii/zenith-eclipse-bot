@@ -1,11 +1,16 @@
 import { Poppins } from 'next/font/google';
+import './global.css';
 
 const poppins = Poppins({
 	weight: ['400', '500', '600', '700'],
 	subsets: ['latin'],
+	display: 'swap',
 });
 
-import './global.css';
+export const metadata = {
+	title: 'Zenith Eclipse CO',
+	description: 'Chat with us live or make a free call directly from your browser—available 24/7 for your convenience',
+};
 
 export default function RootLayout({
 	children,
@@ -17,6 +22,9 @@ export default function RootLayout({
 			lang="en"
 			className={poppins.className}
 		>
+			<head>
+				<link rel="icon" href="/logo.svg" />
+			</head>
 			<body>{children}</body>
 		</html>
 	);

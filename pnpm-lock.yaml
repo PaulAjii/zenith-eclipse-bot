@@ -8,6 +8,9 @@ importers:
 
   .:
     dependencies:
+      '@ai-sdk/langchain':
+        specifier: 1.0.0-canary.7
+        version: 1.0.0-canary.7(zod@3.24.4)
       '@ai-sdk/react':
         specifier: ^1.2.11
         version: 1.2.11(react@19.1.0)(zod@3.24.4)
@@ -93,14 +96,28 @@ importers:
 
 packages:
 
+  '@ai-sdk/langchain@1.0.0-canary.7':
+    resolution: {integrity: sha512-8oijFQMC+pwyEggrBxdcy9hogfb+y7ZiZ35DxGfrzFx9R1x61hgN+06EIGANzuAooZFQCV+VEP1Px/TGCoUdPw==}
+    engines: {node: '>=18'}
+
   '@ai-sdk/provider-utils@2.2.7':
     resolution: {integrity: sha512-kM0xS3GWg3aMChh9zfeM+80vEZfXzR3JEUBdycZLtbRZ2TRT8xOj3WodGHPb06sUK5yD7pAXC/P7ctsi2fvUGQ==}
     engines: {node: '>=18'}
     peerDependencies:
       zod: ^3.23.8
 
+  '@ai-sdk/provider-utils@3.0.0-canary.15':
+    resolution: {integrity: sha512-CngJsLkavwCIrNvX+G1JP6b0aiqGozXDs18sO4Q6GFjdrORew+FDJGbTz/EQgQtW3gzOBEAaQOCgdxVuBLL+Ew==}
+    engines: {node: '>=18'}
+    peerDependencies:
+      zod: ^3.23.8
+
   '@ai-sdk/provider@1.1.3':
     resolution: {integrity: sha512-qZMxYJ0qqX/RfnuIaab+zp8UAeJn/ygXXAffR5I4N0n1IrvA6qBsjc8hXLmBiMV2zoXlifkacF7sEFnYnjBcqg==}
+    engines: {node: '>=18'}
+
+  '@ai-sdk/provider@2.0.0-canary.14':
+    resolution: {integrity: sha512-aN83hjdjDCyhkOdulwMsxmGb91owS+bCSe6FWg1TEwusNM35vv020nY//Gid/0NdIpVkZJGzAajgCWrnno2zzA==}
     engines: {node: '>=18'}
 
   '@ai-sdk/react@1.2.11':
@@ -1126,6 +1143,12 @@ packages:
     peerDependenciesMeta:
       react:
         optional: true
+
+  ai@5.0.0-canary.19:
+    resolution: {integrity: sha512-JQsFEI9AvetPQgcvLyw1xuYxLYHvN0E/6Pff4bDdVexJCJ9a4AZkX1n1uq2CoAlG457bN//83UOdNl9XBrwPwg==}
+    engines: {node: '>=18'}
+    peerDependencies:
+      zod: ^3.23.8
 
   ajv@6.12.6:
     resolution: {integrity: sha512-j3fVLgvTo527anyYyJOGTYJbG+vnnQYvE0m5mmkc1TK+nxAppkCLMIL0aZ4dblVCNoGShhm+kzE4ZUykBoMg4g==}
@@ -3333,6 +3356,13 @@ packages:
 
 snapshots:
 
+  '@ai-sdk/langchain@1.0.0-canary.7(zod@3.24.4)':
+    dependencies:
+      '@ai-sdk/provider-utils': 3.0.0-canary.15(zod@3.24.4)
+      ai: 5.0.0-canary.19(zod@3.24.4)
+    transitivePeerDependencies:
+      - zod
+
   '@ai-sdk/provider-utils@2.2.7(zod@3.24.4)':
     dependencies:
       '@ai-sdk/provider': 1.1.3
@@ -3340,7 +3370,17 @@ snapshots:
       secure-json-parse: 2.7.0
       zod: 3.24.4
 
+  '@ai-sdk/provider-utils@3.0.0-canary.15(zod@3.24.4)':
+    dependencies:
+      '@ai-sdk/provider': 2.0.0-canary.14
+      zod: 3.24.4
+      zod-to-json-schema: 3.24.5(zod@3.24.4)
+
   '@ai-sdk/provider@1.1.3':
+    dependencies:
+      json-schema: 0.4.0
+
+  '@ai-sdk/provider@2.0.0-canary.14':
     dependencies:
       json-schema: 0.4.0
 
@@ -4034,6 +4074,13 @@ snapshots:
       zod: 3.24.4
     optionalDependencies:
       react: 19.1.0
+
+  ai@5.0.0-canary.19(zod@3.24.4):
+    dependencies:
+      '@ai-sdk/provider': 2.0.0-canary.14
+      '@ai-sdk/provider-utils': 3.0.0-canary.15(zod@3.24.4)
+      '@opentelemetry/api': 1.9.0
+      zod: 3.24.4
 
   ajv@6.12.6:
     dependencies:
@@ -5011,7 +5058,7 @@ snapshots:
       isstream: 0.1.2
       jsonwebtoken: 9.0.2
       mime-types: 2.1.35
-      retry-axios: 2.6.0(axios@1.9.0(debug@4.4.0))
+      retry-axios: 2.6.0(axios@1.9.0)
       tough-cookie: 4.1.4
     transitivePeerDependencies:
       - supports-color
@@ -6144,7 +6191,7 @@ snapshots:
       path-parse: 1.0.7
       supports-preserve-symlinks-flag: 1.0.0
 
-  retry-axios@2.6.0(axios@1.9.0(debug@4.4.0)):
+  retry-axios@2.6.0(axios@1.9.0):
     dependencies:
       axios: 1.9.0(debug@4.4.0)
 
