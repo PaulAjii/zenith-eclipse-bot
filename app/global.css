@@ -195,8 +195,8 @@ button {
 	height: 100%;
 	background: rgba(0, 0, 0, 0.5);
 	display: flex;
-	align-items: flex-end;
-	justify-content: flex-end;
+	align-items: center;
+	justify-content: center;
 	z-index: 1000;
 	padding: 0;
 }
@@ -211,6 +211,7 @@ button {
 	flex-direction: column;
 	overflow: hidden;
 	margin: 0;
+	position: relative;
 }
 
 .modal-header {
@@ -673,6 +674,21 @@ button {
 		justify-content: center;
 		margin-top: 5px;
 	}
+	
+	.chat__container.modal-chat {
+		max-height: calc(100% - 130px);
+		padding-top: 5px;
+		padding-bottom: 10px;
+	}
+	
+	.chat-modal {
+		display: flex;
+		flex-direction: column;
+	}
+	
+	.modal-header {
+		flex-shrink: 0;
+	}
 }
 
 @media screen and (min-width: 480px) {
@@ -735,11 +751,17 @@ button {
 		height: 600px;
 		max-height: 80vh;
 		border-radius: 12px;
-		margin: 0 2rem 2rem 0;
+		margin: 0;
 	}
 	
 	.modal-header {
 		border-radius: 12px 12px 0 0;
+	}
+	
+	.modal-overlay {
+		align-items: flex-end;
+		justify-content: flex-end;
+		padding: 0 2rem 2rem 0;
 	}
 }
 

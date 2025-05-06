@@ -34,21 +34,36 @@ const ChatModal = ({ onClose }: ChatModalProps) => {
   });
   const chatContainerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
+  const lastMessageRef = useRef<HTMLDivElement>(null);
+  const welcomeMessageRef = useRef<HTMLDivElement>(null);
   const MAX_INPUT_LENGTH = 500;
 
-  // Scroll to bottom whenever messages change
-  useEffect(() => {
-    if (chatContainerRef.current) {
-      chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight;
-    }
-  }, [messages, isLoading]);
-
-  // Focus input field on mount
+  // Focus input field on mount and ensure welcome message is visible
   useEffect(() => {
     if (inputRef.current) {
       inputRef.current.focus();
     }
+    
+    // Make sure welcome message is visible when modal first opens
+    if (welcomeMessageRef.current && chatContainerRef.current) {
+      welcomeMessageRef.current.scrollIntoView({ block: 'start', behavior: 'auto' });
+    }
   }, []);
+
+  // Improved scroll behavior to show new messages without scrolling to bottom
+  useEffect(() => {
+    // Only scroll if we have messages or are loading
+    if (messages.length > 0 || isLoading) {
+      // If loading, scroll to show the loading indicator
+      if (isLoading && chatContainerRef.current) {
+        chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight;
+      } 
+      // If we have a last message reference, scroll to it
+      else if (lastMessageRef.current) {
+        lastMessageRef.current.scrollIntoView({ block: 'start', behavior: 'smooth' });
+      }
+    }
+  }, [messages, isLoading]);
 
   // Validate input
   const validateInput = (text: string): { valid: boolean; message: string } => {
@@ -240,16 +255,23 @@ const ChatModal = ({ onClose }: ChatModalProps) => {
         </div>
         
         <div className="chat__container modal-chat" ref={chatContainerRef}>
-          <ChatBubble
-            content="Hello, how can I help you today? I'm your Zenith Eclipse assistant."
-            role="assistant"
-          />
-          {messages.map((message, index) => (
+          <div ref={welcomeMessageRef}>
             <ChatBubble
-              key={`message-${index}`}
-              content={message.content}
-              role={message.role}
+              content="Hello, how can I help you today? I'm your Zenith Eclipse assistant."
+              role="assistant"
             />
+          </div>
+          
+          {messages.map((message, index) => (
+            <div 
+              key={`message-${index}`}
+              ref={index === messages.length - 1 ? lastMessageRef : undefined}
+            >
+              <ChatBubble
+                content={message.content}
+                role={message.role}
+              />
+            </div>
           ))}
           {isLoading && <LoadingBubble />}
         </div>
