@@ -65,6 +65,16 @@ const ChatModal = ({ onClose }: ChatModalProps) => {
     }
   }, [messages, isLoading]);
 
+  // --- NEW: Scroll to bottom as assistant message streams ---
+  useEffect(() => {
+    if (!chatContainerRef.current) return;
+    // Find the last assistant message
+    const lastMsg = messages[messages.length - 1];
+    if (lastMsg && lastMsg.role === 'assistant') {
+      chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight;
+    }
+  }, [messages.length > 0 ? messages[messages.length - 1]?.content : null]);
+
   // Validate input
   const validateInput = (text: string): { valid: boolean; message: string } => {
     if (!text.trim()) {
@@ -138,13 +148,39 @@ const ChatModal = ({ onClose }: ChatModalProps) => {
           setSessionId(data.sessionId);
         }
 
-        const assistantMessage: Message = {
-          role: 'assistant',
-          content: data.message,
-          id: String(Date.now() + 1),
-        };
+        // Streaming effect: add empty assistant message, then reveal it character by character
+        const assistantId = String(Date.now() + 1);
+        setMessages((prev) => [
+          ...prev,
+          {
+            role: 'assistant',
+            content: '',
+            id: assistantId,
+          },
+        ]);
 
-        setMessages((prev) => [...prev, assistantMessage]);
+        // Streaming logic
+        const fullMessage = data.message || '';
+        let currentIndex = 0;
+        const streamSpeed = 1; // ms per character (adjust for faster/slower effect)
+
+        function streamNextChar() {
+          currentIndex++;
+          setMessages((prev) => {
+            // Only update the last assistant message
+            return prev.map((msg, idx) =>
+              idx === prev.length - 1 && msg.id === assistantId
+                ? { ...msg, content: fullMessage.slice(0, currentIndex) }
+                : msg
+            );
+          });
+          if (currentIndex < fullMessage.length) {
+            setTimeout(streamNextChar, streamSpeed);
+          }
+        }
+        if (fullMessage.length > 0) {
+          setTimeout(streamNextChar, streamSpeed);
+        }
       } catch (error) {
         let errorType: ErrorType = 'unknown';
         let errorMessage = "I'm sorry, I couldn't process your request. Please try again.";
