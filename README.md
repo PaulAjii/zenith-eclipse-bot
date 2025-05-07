@@ -1,4 +1,4 @@
-# Zenith Eclipse Chatbot – System Context & Development Overview
+# Zenith Eclipse Chatbot
 
 ## Project Vision & Product Context
 
