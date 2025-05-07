@@ -2,9 +2,8 @@ import { NextResponse } from 'next/server';
 import { graph } from '@/scripts/rag';
 import { sessionManager } from '@/utils/sessionManager';
 import { logInteraction } from '@/utils/analytics';
-import { Document } from '@langchain/core/documents';
 import type { ErrorCode } from "./types"
-import { ChatRequest, TokenUsage, GraphResponse, ErrorResponse } from "./types"
+import { ChatRequest, GraphResponse, ErrorResponse } from "./types"
 import validateInput from "./utils/validateInput"
 
 export async function POST(req: Request) {

@@ -1,3 +1,5 @@
+import { Document } from '@langchain/core/documents';
+
 export interface ChatRequest {
 	prompt: string;
 	sessionId?: string,
