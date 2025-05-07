@@ -16,7 +16,7 @@ export async function GET() {
 
     const data = await response.json()
     return NextResponse.json(data)
-  } catch (error: any) {
+  } catch (error) {
     console.error('[GET /api/session] error:', error)
     return NextResponse.json({ error: error.message }, { status: 500 })
   }
