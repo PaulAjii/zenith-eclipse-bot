@@ -2,66 +2,9 @@ import { NextResponse } from 'next/server';
 import { graph } from '@/scripts/rag';
 import { sessionManager } from '@/utils/sessionManager';
 import { logInteraction } from '@/utils/analytics';
-import { Document } from '@langchain/core/documents';
-
-interface ChatRequest {
-	prompt: string;
-	sessionId?: string,
-	windowSize?: number
-}
-
-// Define a type for the token usage data
-interface TokenUsage {
-	promptTokens: number;
-	completionTokens: number;
-	totalTokens: number;
-}
-
-// Define a type for the graph response
-interface GraphResponse {
-	finalAnswer?: string;
-	answer: string;
-	context?: Document[];
-	needsHumanAssistance?: boolean;
-	category?: string;
-	contextRelevance?: number;
-	llmOutput?: {
-		tokenUsage?: TokenUsage;
-	};
-}
-
-// Define error response types for better client handling
-type ErrorCode = 'input_validation' | 'server_error' | 'database_error' | 'model_error' | 'timeout' | 'unknown';
-
-interface ErrorResponse {
-	status: 'Error';
-	code: ErrorCode;
-	message: string;
-	details?: unknown;
-}
-
-// Input validation
-const validateInput = (prompt: unknown): string | null => {
-	if (!prompt) {
-		return 'Prompt is required';
-	}
-	
-	if (typeof prompt !== 'string') {
-		return 'Prompt must be a string';
-	}
-	
-	const trimmedPrompt = prompt.trim();
-	
-	if (!trimmedPrompt) {
-		return 'Prompt cannot be empty';
-	}
-	
-	if (trimmedPrompt.length > 1000) {
-		return 'Prompt is too long (maximum 1000 characters)';
-	}
-	
-	return null;
-};
+import type { ErrorCode } from "./types"
+import { ChatRequest, GraphResponse, ErrorResponse } from "./types"
+import validateInput from "./utils/validateInput"
 
 export async function POST(req: Request) {
 	try {
