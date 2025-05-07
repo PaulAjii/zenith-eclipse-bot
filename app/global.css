@@ -637,7 +637,8 @@ button {
 }
 
 .ai__speaking {
-	width: 400px;
+  width: 100%;
+	max-width: 400px;
 	border-radius: 50%;
 	object-fit: cover;
 	display: flex;
