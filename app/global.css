@@ -627,6 +627,56 @@ button {
 	padding: 0;
 }
 
+.call__container {
+	display: flex;
+	flex-direction: column;
+	height: 100%;
+	justify-content: space-between;
+	align-items: center;
+	padding: 1rem;
+}
+
+.ai__speaking {
+	width: 400px;
+	border-radius: 50%;
+	object-fit: cover;
+	display: flex;
+	flex-direction: column;
+	gap: 0.5rem;
+	align-items: center;
+}
+
+.ai__speaking > img {
+	width: 100%;
+	height: 100%;
+}
+
+.ai__speaking > em {
+	font-size: 14px;
+}
+
+.call__btn {
+	background-color: var(--primary);
+	padding-block: 1rem;
+	width: 100%;
+	border-radius: 12px;
+	color: var(--light-bg);
+	transition: all 500ms;
+	cursor: pointer;
+}
+
+.call__btn.end {
+	background-color: var(--accent-dark);
+}
+
+.call__btn:hover {
+	background-color: var(--primary-light);
+}
+
+.call__btn.end:hover {
+	background-color: var(--accent);
+}
+
 /* Loader */
 .loader {
 	margin: 10px;
