@@ -44,4 +44,4 @@ next-env.d.ts
 /db/data
 
 # folder
-cursor-memory-bank/
+/cursor-memory-bank
