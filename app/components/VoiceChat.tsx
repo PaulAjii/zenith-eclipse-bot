@@ -83,7 +83,7 @@ interface ChatModalProps {
     const handleCallEnd = () => {
         dataChannelRef.current.close();
         peerRef.current.close();
-        localStreamRef.getTracks().forEach((track) => {
+        localStreamRef.current.getTracks().forEach((track) => {
          track.stop();  
         })
         setIsCalling(false);
