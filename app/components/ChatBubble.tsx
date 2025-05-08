@@ -39,7 +39,13 @@ const ChatBubble = ({ content, role }: ChatBubbleProps) => {
 							// Style paragraphs
 							p: ({...props}) => <p className="markdown-p" {...props} />,
 							// Style bold text
-							strong: ({...props}) => <strong className="markdown-strong" {...props} />
+							strong: ({...props}) => <strong className="markdown-strong" {...props} />,
+							// Ensure all links open in a new tab
+							a: ({href, children, ...props}) => (
+								<a href={href} target="_blank" rel="noopener noreferrer" {...props}>
+									{children}
+								</a>
+							),
 						}}
 					>
 						{content}
