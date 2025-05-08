@@ -78,13 +78,16 @@ interface ChatModalProps {
 
     const handleCallStart = async () => {
         await init();
-    }
+    };
 
     const handleCallEnd = () => {
-        dataChannelRef.current.close()
-        peerRef.current.close()
-        setIsCalling(false)
-    }
+        dataChannelRef.current.close();
+        peerRef.current.close();
+        localStreamRef.getTracks().forEach((track) => {
+         track.stop();  
+        })
+        setIsCalling(false);
+    };
 
     return (
       <div className="modal-overlay">
