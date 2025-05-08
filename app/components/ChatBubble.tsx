@@ -15,7 +15,7 @@ const ChatBubble = ({ content, role }: ChatBubbleProps) => {
 			{!isUser && (
 				<div className="avatar-container">
 					<Image 
-						src="/avatar-bot.svg" 
+						src="/images/Zenith-Eclipse-Logo.webp" 
 						alt="Bot"
 						width={40}
 						height={40}
