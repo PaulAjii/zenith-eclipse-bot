@@ -23,7 +23,7 @@ export default function RootLayout({
 			className={poppins.className}
 		>
 			<head>
-				<link rel="icon" href="/logo.svg" />
+				<link rel="icon" href="/images/Zenith-Eclipse-Logo.webp" />
 			</head>
 			<body>{children}</body>
 		</html>

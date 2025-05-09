@@ -32,12 +32,11 @@ export default function HomePage() {
 			<header className="site-header">
 				<div className="logo-container">
 					<Image 
-						src="/logo.svg" 
+						src="/images/Zenith-Eclipse-Logo.webp" 
 						alt="Zenith Eclipse Logo" 
+						width={60} 
+						height={60}
 						className="logo-image"
-						width={70}
-						height={70}
-						priority
 					/>
 					<div className="logo-text">
 						<div className="logo-name">ZENITH ECLIPSE</div>

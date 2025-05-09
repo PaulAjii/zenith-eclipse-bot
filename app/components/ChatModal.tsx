@@ -268,7 +268,7 @@ const ChatModal = ({ onClose }: ChatModalProps) => {
         <div className="modal-header">
           <div className="modal-title-container">
             <Image 
-              src="/logo.svg" 
+              src="/images/Zenith-Eclipse-Logo.webp" 
               alt="Zenith Eclipse Logo" 
               width={30} 
               height={30}

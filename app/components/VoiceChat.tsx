@@ -96,7 +96,12 @@ interface ChatModalProps {
                     isCalling ? (
                         <>
                         <div className="ai__speaking">
-                            <Image src="/logo.svg" alt="Zenith Eclipse Logo" width={1000} height={1000} />
+                            <Image 
+                                src="/images/Zenith-Eclipse-Logo.webp" 
+                                alt="Zenith Eclipse Logo" 
+                                width={1000} 
+                                height={1000} 
+                            />
 
                             <em>Click the End call button to end call with the Bot.</em>
                         </div>
@@ -104,7 +109,12 @@ interface ChatModalProps {
                     ) : (
                     <>
                         <div className="ai__speaking">
-                            <Image src="/logo.svg" alt="Zenith Eclipse Logo" width={1000} height={1000} />
+                            <Image 
+                                src="/images/Zenith-Eclipse-Logo.webp" 
+                                alt="Zenith Eclipse Logo" 
+                                width={1000} 
+                                height={1000} 
+                            />
 
                             <em>Click the Call button to start call with the Bot.</em>
                         </div>
