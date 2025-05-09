@@ -1,7 +1,7 @@
 import Image from "next/image"
 import ModalHeader from "./ModalHeader";
 
-import { useState, useRef } from "react";
+import { useState } from "react";
 
 interface ChatModalProps {
     onClose: () => void;

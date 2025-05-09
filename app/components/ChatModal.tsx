@@ -73,7 +73,7 @@ const ChatModal = ({ onClose }: ChatModalProps) => {
     if (lastMsg && lastMsg.role === 'assistant') {
       chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight;
     }
-  }, [messages.length > 0 ? messages[messages.length - 1]?.content : null]);
+  }, [messages]);
 
   // Validate input
   const validateInput = (text: string): { valid: boolean; message: string } => {
@@ -153,7 +153,7 @@ const ChatModal = ({ onClose }: ChatModalProps) => {
         setMessages((prev) => [
           ...prev,
           {
-            role: 'assistant',
+          role: 'assistant',
             content: '',
             id: assistantId,
           },
