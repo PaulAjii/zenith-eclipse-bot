@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import OverviewPanel from '../components/analytics/OverviewPanel';
@@ -11,7 +11,6 @@ import RetentionPanel from '../components/analytics/RetentionPanel';
 
 export default function AnalyticsDashboard() {
   const [timeRange, setTimeRange] = useState(7); // default 7 days
-  const [isLoading, setIsLoading] = useState(false);
   const [activeTab, setActiveTab] = useState('overview');
   const router = useRouter();
   
@@ -90,30 +89,23 @@ export default function AnalyticsDashboard() {
         </button>
       </nav>
       
-      {isLoading ? (
-        <div className="loading-container">
-          <div className="loading-spinner"></div>
-          <p>Loading analytics data...</p>
-        </div>
-      ) : (
-        <div className="dashboard-content">
-          {activeTab === 'overview' && (
-            <OverviewPanel timeRange={timeRange} />
-          )}
-          {activeTab === 'quality' && (
-            <QualityPanel timeRange={timeRange} />
-          )}
-          {activeTab === 'sessions' && (
-            <SessionsPanel timeRange={timeRange} />
-          )}
-          {activeTab === 'topics' && (
-            <TopicsPanel timeRange={timeRange} />
-          )}
-          {activeTab === 'retention' && (
-            <RetentionPanel timeRange={timeRange} />
-          )}
-        </div>
-      )}
+      <div className="dashboard-content">
+        {activeTab === 'overview' && (
+          <OverviewPanel timeRange={timeRange} />
+        )}
+        {activeTab === 'quality' && (
+          <QualityPanel timeRange={timeRange} />
+        )}
+        {activeTab === 'sessions' && (
+          <SessionsPanel timeRange={timeRange} />
+        )}
+        {activeTab === 'topics' && (
+          <TopicsPanel timeRange={timeRange} />
+        )}
+        {activeTab === 'retention' && (
+          <RetentionPanel timeRange={timeRange} />
+        )}
+      </div>
     </div>
   );
 } 

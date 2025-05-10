@@ -176,7 +176,7 @@ export default function OverviewPanel({ timeRange }: { timeRange: number }) {
               {categoryPercentages.length > 0 ? (
                 <>
                   <circle cx="100" cy="100" r="80" fill="#e1e4e8" />
-                  {categoryPercentages.reduce((acc, curr, i, arr) => {
+                  {categoryPercentages.reduce((acc, curr, i) => {
                     const colors = ['#1a3b5d', '#4b77b8', '#7ca1db', '#a5c1ea', '#d0e0f7'];
                     const startAngle = acc.prevAngle;
                     const angle = (curr.value / 100) * Math.PI * 2;

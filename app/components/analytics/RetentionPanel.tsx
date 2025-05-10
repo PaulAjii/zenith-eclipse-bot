@@ -114,9 +114,6 @@ export default function RetentionPanel({ timeRange }: { timeRange: number }) {
     );
   }
 
-  // Colors for the cohort chart
-  const colors = ['#1a3b5d', '#4b77b8', '#7ca1db', '#a5c1ea', '#d0e0f7'];
-
   return (
     <div className="retention-panel">
       <h2>User Retention</h2>

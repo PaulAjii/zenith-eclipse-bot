@@ -246,7 +246,7 @@ export default function QualityPanel({ timeRange }: { timeRange: number }) {
           <div className="queries-list">
             {data.topHumanAssistanceQueries && data.topHumanAssistanceQueries.map((item, index) => (
               <div key={index} className="query-item">
-                <div className="query-text">"{item.query}"</div>
+                <div className="query-text">&ldquo;{item.query}&rdquo;</div>
                 <div className="query-count">{item.count} occurrences</div>
                 <div className="query-bar-container">
                   <div 
