@@ -15,14 +15,14 @@ interface ChatModalProps {
 
 const VoiceChat = ({ onClose }: ChatModalProps) => {
   const [isCalling, setIsCalling] = useState(false);
-  //const [isConnecting, setIsConnecting] = useState(false);
+  const [isConnecting, setIsConnecting] = useState(false);
 
   const peerRef = useRef<RTCPeerConnection | null>(null);
   const dataChannelRef = useRef<RTCDataChannel | null>(null);
   const localStreamRef = useRef<MediaStream | null>(null);
 
   async function init() {
-    //setIsConnecting(true);
+    setIsConnecting(true);
     // Get Ephemeral Token
     const ephemeral = await getToken();
 
@@ -61,7 +61,7 @@ const VoiceChat = ({ onClose }: ChatModalProps) => {
     await peer.setRemoteDescription(answer as RTCSessionDescriptionInit);
 
     dataChannel.addEventListener('open', () => {
-      //setIsConnecting(false);
+      setIsConnecting(false);
       setIsCalling(true);
       dataChannel.send(
         JSON.stringify({
@@ -140,8 +140,8 @@ const VoiceChat = ({ onClose }: ChatModalProps) => {
 
                 <em>Click the Call button to start call with the Bot.</em>
               </div>
-              <button className="call__btn" onClick={handleCallStart}>
-                Call
+              <button className="call__btn" onClick={handleCallStart} disabled={isConnecting}>
+                {isConnecting ? "Connecting..." : "Call"}
               </button>
             </>
           )}
