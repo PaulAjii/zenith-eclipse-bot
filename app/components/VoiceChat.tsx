@@ -1,6 +1,6 @@
 import Image from 'next/image';
 import ModalHeader from './ModalHeader';
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef } from 'react';
 import {
   getToken,
   getSdpResponse,
