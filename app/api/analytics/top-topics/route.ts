@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getTopSessionTopics } from '@/utils/analytics';
+import { ensureAnalyticsInitialized } from '@/app/api/init';
 
 /**
  * @route GET /api/analytics/top-topics
@@ -9,6 +10,10 @@ import { getTopSessionTopics } from '@/utils/analytics';
  */
 export async function GET(req: NextRequest) {
   try {
+    // Ensure analytics is initialized
+    const initError = await ensureAnalyticsInitialized();
+    if (initError) return initError;
+    
     const url = new URL(req.url);
     const daysParam = url.searchParams.get('days');
     const limitParam = url.searchParams.get('limit');

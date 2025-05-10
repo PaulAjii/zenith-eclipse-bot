@@ -67,6 +67,9 @@ button {
   position: sticky;
   top: 0;
   z-index: 100;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
 }
 
 .logo-container {
@@ -859,4 +862,34 @@ button {
   .chat__bubble {
     max-width: calc(100% - 50px);
   }
+}
+
+/* Header Navigation */
+.header-nav {
+  display: flex;
+  align-items: center;
+}
+
+.analytics-link {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  background-color: rgba(26, 59, 93, 0.05);
+  color: #1a3b5d;
+  border: 1px solid rgba(26, 59, 93, 0.2);
+  border-radius: 4px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 1px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.analytics-link:hover {
+  background-color: rgba(26, 59, 93, 0.1);
+}
+
+.analytics-link svg {
+  stroke: #1a3b5d;
 }

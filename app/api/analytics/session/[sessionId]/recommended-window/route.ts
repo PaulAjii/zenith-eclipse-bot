@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSessionAnalytics } from '@/utils/analytics';
+import { ensureAnalyticsInitialized } from '@/app/api/init';
 
 /**
  * @route GET /api/analytics/session/[sessionId]/recommended-window
@@ -11,6 +12,10 @@ export async function GET(
   context: { params: Promise<{ sessionId: string }> }
 ) {
   try {
+    // Ensure analytics is initialized
+    const initError = await ensureAnalyticsInitialized();
+    if (initError) return initError;
+    
     const params = await context.params;
     const sessionId = params.sessionId;
     
@@ -59,27 +64,24 @@ export async function GET(
       recommendedWindowSize += 2;
     }
     
-    // Cap at reasonable maximum
-    recommendedWindowSize = Math.min(recommendedWindowSize, 10);
-    
     return NextResponse.json(
       {
         status: 'Success',
         data: {
           sessionId,
-          interactionCount,
           recommendedWindowSize,
-          recommendation: `Based on this session's complexity and history, we recommend a context window of ${recommendedWindowSize} messages.`
+          interactionCount,
+          needsMoreContext
         }
       },
       { status: 200 }
     );
   } catch (error) {
-    console.error('Session window recommendation error:', error);
+    console.error('Recommended window calculation error:', error);
     return NextResponse.json(
       {
         status: 'Error',
-        message: 'Failed to generate window size recommendation'
+        message: 'Failed to calculate recommended window size'
       },
       { status: 500 }
     );

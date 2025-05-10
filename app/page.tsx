@@ -4,10 +4,12 @@ import { useState } from 'react';
 import Image from 'next/image';
 import ChatModal from './components/ChatModal';
 import VoiceChat from './components/VoiceChat';
+import { useRouter } from 'next/navigation';
 
 export default function HomePage() {
   const [showChatModal, setShowChatModal] = useState(false);
   const [showCallModal, setShowCallModal] = useState(false);
+  const router = useRouter();
 
   const handleChatClick = () => {
     setShowChatModal(true);
@@ -25,6 +27,10 @@ export default function HomePage() {
     setShowCallModal(false);
   };
 
+  const handleAnalyticsClick = () => {
+    router.push('/analytics');
+  };
+
   return (
     <div className="home-page">
       <header className="site-header">
@@ -40,6 +46,19 @@ export default function HomePage() {
             <div className="logo-name">ZENITH ECLIPSE</div>
             <div className="logo-co">CO</div>
           </div>
+        </div>
+        <div className="header-nav">
+          <button className="analytics-link" onClick={handleAnalyticsClick}>
+            <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" strokeWidth="2" fill="none">
+              <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h7"></path>
+              <line x1="16" y1="5" x2="22" y2="5"></line>
+              <line x1="19" y1="2" x2="19" y2="8"></line>
+              <line x1="12" y1="8" x2="12" y2="16"></line>
+              <line x1="8" y1="12" x2="8" y2="16"></line>
+              <line x1="16" y1="12" x2="16" y2="16"></line>
+            </svg>
+            ANALYTICS
+          </button>
         </div>
       </header>
 

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSessionAnalytics } from '@/utils/analytics';
+import { ensureAnalyticsInitialized } from '@/app/api/init';
 
 /**
  * @route GET /api/analytics/session/[sessionId]
@@ -11,6 +12,10 @@ export async function GET(
   context: { params: Promise<{ sessionId: string }> }
 ) {
   try {
+    // Ensure analytics is initialized
+    const initError = await ensureAnalyticsInitialized();
+    if (initError) return initError;
+    
     const params = await context.params;
     const sessionId = params.sessionId;
     

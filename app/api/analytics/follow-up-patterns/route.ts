@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { analyzeFollowUpPatterns } from '@/utils/analytics';
+import { ensureAnalyticsInitialized } from '@/app/api/init';
 
 /**
  * @route GET /api/analytics/follow-up-patterns
@@ -8,6 +9,10 @@ import { analyzeFollowUpPatterns } from '@/utils/analytics';
  */
 export async function GET(req: NextRequest) {
   try {
+    // Ensure analytics is initialized
+    const initError = await ensureAnalyticsInitialized();
+    if (initError) return initError;
+    
     const url = new URL(req.url);
     const limitParam = url.searchParams.get('limit');
     const limit = limitParam ? parseInt(limitParam) : 100;

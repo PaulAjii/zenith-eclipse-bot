@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { analyzeUserRetention } from '@/utils/analytics';
+import { ensureAnalyticsInitialized } from '@/app/api/init';
 
 /**
  * @route GET /api/analytics/user-retention
@@ -8,6 +9,10 @@ import { analyzeUserRetention } from '@/utils/analytics';
  */
 export async function GET(req: NextRequest) {
   try {
+    // Ensure analytics is initialized
+    const initError = await ensureAnalyticsInitialized();
+    if (initError) return initError;
+    
     const url = new URL(req.url);
     const daysParam = url.searchParams.get('days');
     const days = daysParam ? parseInt(daysParam) : 30;
