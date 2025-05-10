@@ -697,6 +697,11 @@ button {
   background-color: var(--accent);
 }
 
+.call__btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
 /* Loader */
 .loader {
   margin: 10px;
