@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { MongoClient } from 'mongodb';
+import { MongoClient, Collection, Document } from 'mongodb';
 import { ensureAnalyticsInitialized } from '@/app/api/init';
 
 const { MONGO_URI, MONGO_DB } = process.env;
 let client: MongoClient | null = null;
-let voiceAnalyticsCollection: any = null;
+let voiceAnalyticsCollection: Collection<Document> | null = null;
 
 async function getVoiceAnalyticsCollection() {
   if (!voiceAnalyticsCollection) {
@@ -12,7 +12,7 @@ async function getVoiceAnalyticsCollection() {
       client = new MongoClient(MONGO_URI!);
       await client.connect();
     }
-    voiceAnalyticsCollection = client.db(MONGO_DB).collection('voice_analytics');
+    voiceAnalyticsCollection = client.db(MONGO_DB).collection<Document>('voice_analytics');
     await voiceAnalyticsCollection.createIndex({ sessionId: 1 });
     await voiceAnalyticsCollection.createIndex({ timestamp: 1 });
   }

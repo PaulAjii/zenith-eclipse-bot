@@ -91,7 +91,7 @@ const ChatModal = ({ onClose, userInfo }: ChatModalProps) => {
         },
       ]);
     }
-  }, [userInfo]);
+  }, [messages.length, userInfo]);
 
   // Validate input
   const validateInput = (text: string): { valid: boolean; message: string } => {

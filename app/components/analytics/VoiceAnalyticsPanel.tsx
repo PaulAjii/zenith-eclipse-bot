@@ -12,7 +12,7 @@ interface VoiceInteraction {
   prompt: string;
   response: string;
   timestamp: string;
-  metadata?: Record<string, any>;
+  metadata?: Record<string, unknown>;
 }
 
 export default function VoiceAnalyticsPanel({ timeRange }: { timeRange: number }) {
@@ -196,12 +196,12 @@ export default function VoiceAnalyticsPanel({ timeRange }: { timeRange: number }
             
             <div className="interaction-content">
               <div className="prompt-container">
-                <h4>User's Spoken Prompt</h4>
+                <h4>User&apos;s Spoken Prompt</h4>
                 <div className="prompt-text">{selectedInteraction.prompt}</div>
               </div>
               
               <div className="response-container">
-                <h4>Bot's Spoken Response</h4>
+                <h4>Bot&apos;s Spoken Response</h4>
                 <div className="response-text">{selectedInteraction.response}</div>
               </div>
             </div>
