@@ -5,14 +5,22 @@ import Image from 'next/image';
 import ChatModal from './components/ChatModal';
 import VoiceChat from './components/VoiceChat';
 import { useRouter } from 'next/navigation';
+import { UserInfoProvider, useUserInfo } from './components/UserInfoContext';
+import UserInfoModal from './components/UserInfoModal';
 
-export default function HomePage() {
+function HomePageContent() {
   const [showChatModal, setShowChatModal] = useState(false);
   const [showCallModal, setShowCallModal] = useState(false);
   const router = useRouter();
+  const { userInfo, setUserInfo } = useUserInfo();
+  const [pendingAction, setPendingAction] = useState<'chat' | 'call' | null>(null);
 
   const handleChatClick = () => {
+    if (!userInfo) {
+      setPendingAction('chat');
+    } else {
     setShowChatModal(true);
+    }
   };
 
   const handleCloseChat = () => {
@@ -20,7 +28,11 @@ export default function HomePage() {
   };
 
   const handleCallModal = () => {
+    if (!userInfo) {
+      setPendingAction('call');
+    } else {
     setShowCallModal(true);
+    }
   };
 
   const handleCloseCallModal = () => {
@@ -29,6 +41,16 @@ export default function HomePage() {
 
   const handleAnalyticsClick = () => {
     router.push('/analytics');
+  };
+
+  const handleUserInfoSubmit = (info: { fullname: string; email: string; phone?: string }) => {
+    setUserInfo(info);
+    if (pendingAction === 'chat') {
+      setShowChatModal(true);
+    } else if (pendingAction === 'call') {
+      setShowCallModal(true);
+    }
+    setPendingAction(null);
   };
 
   return (
@@ -115,8 +137,19 @@ export default function HomePage() {
         </div>
       </main>
 
-      {showChatModal && <ChatModal onClose={handleCloseChat} />}
-      {showCallModal && <VoiceChat onClose={handleCloseCallModal} />}
+      {showChatModal && userInfo && <ChatModal onClose={handleCloseChat} userInfo={userInfo} />}
+      {showCallModal && userInfo && <VoiceChat onClose={handleCloseCallModal} userInfo={userInfo} />}
+      {pendingAction && !userInfo && (
+        <UserInfoModal onSubmit={handleUserInfoSubmit} />
+      )}
     </div>
+  );
+}
+
+export default function HomePage() {
+  return (
+    <UserInfoProvider>
+      <HomePageContent />
+    </UserInfoProvider>
   );
 }

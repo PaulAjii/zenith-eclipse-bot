@@ -6,7 +6,9 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "seed": "tsx utils/enhancedSeeding.ts",
+    "seed:clear": "tsx utils/enhancedSeeding.ts --clear"
   },
   "dependencies": {
     "@ai-sdk/langchain": "1.0.0-canary.7",

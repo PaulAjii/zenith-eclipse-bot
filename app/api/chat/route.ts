@@ -5,12 +5,16 @@ import { logInteraction } from '@/utils/analytics';
 import type { ErrorCode } from "./types"
 import { ChatRequest, GraphResponse, ErrorResponse } from "./types"
 import validateInput from "./utils/validateInput"
+import { ensureAnalyticsInitialized } from '@/app/api/init';
 
 export async function POST(req: Request) {
 	try {
+		// Ensure analytics is initialized
+		const initError = await ensureAnalyticsInitialized();
+		if (initError) return initError;
 		// Extract request body
 		const body = await req.json().catch(() => ({}));
-		const { prompt, sessionId, windowSize }: ChatRequest = body;
+		const { prompt, sessionId, windowSize, userInfo }: ChatRequest = body;
 		
 		// Validate input
 		const validationError = validateInput(prompt);
@@ -29,7 +33,7 @@ export async function POST(req: Request) {
 		const startTime = Date.now();
 
 		// Get or create session for conversation history
-		const session = sessionManager.getOrCreateSession(sessionId);
+		const session = sessionManager.getOrCreateSession(sessionId, userInfo);
 
 		// Set conversation window size if provided
 		if (windowSize !== undefined) {
@@ -51,7 +55,7 @@ export async function POST(req: Request) {
 		sessionManager.addMessage(session.sessionId, {
 			role: "human",
 			content: prompt.trim()
-		});
+		}, userInfo);
 
 		// Get conversation history with current window size
 		const history = sessionManager.getFormattedHistory(session.sessionId);
@@ -83,7 +87,7 @@ export async function POST(req: Request) {
 		sessionManager.addMessage(session.sessionId, {
 			role: "assistant",
 			content: response.finalAnswer || response.answer
-		});
+		}, userInfo);
 
 		// Extract token usage if available from the LLM output
 		// Access it safely through the result object
@@ -112,6 +116,9 @@ export async function POST(req: Request) {
 		// Fire and forget: Log analytics data without waiting for it to complete
 		const userAgent = req.headers.get('user-agent') || 'Unknown';
 		
+		// After getting the session, ensure userInfo is available
+		const effectiveUserInfo = userInfo || session.userInfo;
+		
 		// Don't await this promise - let it run in the background
 		Promise.resolve().then(() => {
 			logInteraction(
@@ -123,7 +130,12 @@ export async function POST(req: Request) {
 				response.needsHumanAssistance || false,
 				response.category || 'General',
 				response.contextRelevance || 0,
-				{ userAgent }
+				{
+					userAgent,
+					fullname: effectiveUserInfo?.fullname,
+					email: effectiveUserInfo?.email,
+					phone: effectiveUserInfo?.phone,
+				}
 			).catch(err => {
 				// Only log analytics errors
 				console.error('Analytics error:', err);

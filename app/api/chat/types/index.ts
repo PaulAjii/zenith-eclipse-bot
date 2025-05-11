@@ -3,7 +3,12 @@ import { Document } from '@langchain/core/documents';
 export interface ChatRequest {
 	prompt: string;
 	sessionId?: string,
-	windowSize?: number
+	windowSize?: number,
+	userInfo?: {
+		fullname: string;
+		email: string;
+		phone?: string;
+	};
 }
 
 // Define a type for the token usage data

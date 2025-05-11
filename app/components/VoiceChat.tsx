@@ -8,14 +8,21 @@ import {
   getTTSResponse,
 } from '@/services/openapi';
 import { COMPANY_SYSTEM_PROMPT } from '@/utils/prompts';
+import { v4 as uuidv4 } from 'uuid';
 
 interface ChatModalProps {
   onClose: () => void;
+  userInfo: {
+    fullname: string;
+    email: string;
+    phone?: string;
+  };
 }
 
-const VoiceChat = ({ onClose }: ChatModalProps) => {
+const VoiceChat = ({ onClose, userInfo }: ChatModalProps) => {
   const [isCalling, setIsCalling] = useState(false);
   const [isConnecting, setIsConnecting] = useState(false);
+  const [sessionId] = useState(() => uuidv4());
 
   const peerRef = useRef<RTCPeerConnection | null>(null);
   const dataChannelRef = useRef<RTCDataChannel | null>(null);
@@ -66,8 +73,15 @@ const VoiceChat = ({ onClose }: ChatModalProps) => {
         JSON.stringify({
           type: 'session.update',
           session: {
-            instructions: COMPANY_SYSTEM_PROMPT,
+            instructions: `${COMPANY_SYSTEM_PROMPT}\n\nUser: ${userInfo.fullname} (${userInfo.email}${userInfo.phone ? ', ' + userInfo.phone : ''})`,
           },
+        })
+      );
+      // Send greeting as first message
+      dataChannel.send(
+        JSON.stringify({
+          type: 'text',
+          text: `Hello, ${userInfo.fullname}! How can I help you today?`,
         })
       );
     });
@@ -77,13 +91,22 @@ const VoiceChat = ({ onClose }: ChatModalProps) => {
 
       if (data.type === 'text') {
         const prompt = data.text;
-
         const response = await getChatResponse(prompt);
         const responseData = await response.json();
         const botResponse = responseData.message;
-
+        // Log to voice analytics
+        fetch('/api/voice-analytics', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            sessionId,
+            userInfo,
+            prompt,
+            response: botResponse,
+            timestamp: new Date().toISOString(),
+          }),
+        });
         const ttsResponse = await getTTSResponse(ephemeral, botResponse);
-
         const audioStream = await ttsResponse.blob();
         const audioUrl = URL.createObjectURL(audioStream);
         const audio = new Audio(audioUrl);

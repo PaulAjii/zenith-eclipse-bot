@@ -60,30 +60,59 @@ const categorize = async (state: typeof StateAnnotation.State) => {
 // Step 2: Retrieve relevant documents
 const retrieve = async (state: typeof StateAnnotation.State) => {
 	// Retrieve documents without using category filter to avoid MongoDB index issues
-	const retrievedDocs = await safeSimilaritySearch(state.question, 12);
-	
+	const retrievedDocs = await safeSimilaritySearch(state.question, 16);
+
 	// Apply category filtering in memory instead of in the database query
 	let filteredDocs = retrievedDocs;
 	if (state.category !== 'General') {
 		filteredDocs = retrievedDocs.filter(doc => 
 			doc.metadata?.category === state.category
 		);
-		
 		// If filtering resulted in too few documents, fall back to all retrieved docs
 		if (filteredDocs.length < 3) {
 			filteredDocs = retrievedDocs;
 		}
 	}
-	
+
+	// --- NEW: Boost FAQ and direct-answer chunks for direct questions ---
+	const isDirectQuestion = /^(what|how|who|where|when|why|can|does|do|is|are|should|could|would|will|may|did|has|have|had)\b/i.test(state.question.trim());
+	let boostedDocs = filteredDocs;
+	if (isDirectQuestion) {
+		const faqDocs = filteredDocs.filter(doc => doc.metadata?.is_faq);
+		if (faqDocs.length > 0) {
+			// Prioritize FAQ chunks
+			boostedDocs = [...faqDocs, ...filteredDocs.filter(doc => !doc.metadata?.is_faq)];
+		}
+	}
+
+	// --- NEW: Boost by tag/section if question contains tag keywords ---
+	const questionLower = state.question.toLowerCase();
+	const tagMatchDocs = boostedDocs.filter(doc => {
+		if (!doc.metadata?.tags) return false;
+		return doc.metadata.tags.some((tag: string) => questionLower.includes(tag.toLowerCase()));
+	});
+	if (tagMatchDocs.length > 0) {
+		boostedDocs = [...tagMatchDocs, ...boostedDocs.filter(doc => !tagMatchDocs.includes(doc))];
+	}
+
 	// Reorder documents by relevance to the question
-	const orderedDocs = reorderDocumentsByRelevance(filteredDocs, state.question);
-	
+	const orderedDocs = reorderDocumentsByRelevance(boostedDocs, state.question);
+
 	// Take only the top most relevant documents
 	const selectedDocs = orderedDocs.slice(0, 4);
-	
+
 	// Evaluate context relevance for later use
 	const relevance = evaluateContextRelevance(selectedDocs, state.question);
-	
+
+	// --- NEW: If no relevant chunk, return a clarifying question ---
+	if (!selectedDocs.length || relevance < 0.15) {
+		return {
+			context: [],
+			contextRelevance: 0,
+			clarification: `I'm not sure I have enough information to answer that. Could you please clarify or provide more details about your request?`
+		};
+	}
+
 	return { 
 		context: selectedDocs,
 		contextRelevance: relevance

@@ -12,11 +12,18 @@ export interface ChatMessage {
 /**
  * Structure for storing chat sessions
  */
+export interface UserInfo {
+  fullname: string;
+  email: string;
+  phone?: string;
+}
+
 interface SessionStore {
   [sessionId: string]: {
     history: ChatMessage[];
     lastUpdated: Date;
     conversationWindowSize?: number;
+    userInfo?: UserInfo;
   };
 }
 
@@ -32,41 +39,43 @@ class SessionManager {
   /**
    * Gets a session by ID or creates a new one
    */
-  public getOrCreateSession(sessionId?: string): { sessionId: string; history: ChatMessage[] } {
-    // Generate a new ID if none provided
+  public getOrCreateSession(sessionId?: string, userInfo?: UserInfo): { sessionId: string; history: ChatMessage[]; userInfo?: UserInfo } {
     const id = sessionId || uuidv4();
-    
-    // Create new session if it doesn't exist or has expired
     if (!this.sessions[id] || this.isSessionExpired(id)) {
       this.sessions[id] = {
         history: [],
         lastUpdated: new Date(),
-        conversationWindowSize: this.defaultWindowSize
+        conversationWindowSize: this.defaultWindowSize,
+        userInfo: userInfo,
       };
     } else {
-      // Update the last activity time
       this.sessions[id].lastUpdated = new Date();
+      // If userInfo is provided and not set, update it
+      if (userInfo && !this.sessions[id].userInfo) {
+        this.sessions[id].userInfo = userInfo;
+      }
     }
-    
     return {
       sessionId: id,
-      history: this.sessions[id].history
+      history: this.sessions[id].history,
+      userInfo: this.sessions[id].userInfo,
     };
   }
   
   /**
    * Adds a message to a session's history
    */
-  public addMessage(sessionId: string, message: ChatMessage): void {
-    const session = this.getOrCreateSession(sessionId);
-    
-    // Add timestamp if not provided
+  public addMessage(sessionId: string, message: ChatMessage, userInfo?: UserInfo): void {
+    const session = this.getOrCreateSession(sessionId, userInfo);
     if (!message.timestamp) {
       message.timestamp = new Date();
     }
-    
     this.sessions[sessionId].history.push(message);
     this.sessions[sessionId].lastUpdated = new Date();
+    // Optionally update userInfo if provided
+    if (userInfo) {
+      this.sessions[sessionId].userInfo = userInfo;
+    }
   }
   
   /**
@@ -141,6 +150,12 @@ class SessionManager {
   public getFullHistory(sessionId: string): ChatMessage[] {
     const session = this.getOrCreateSession(sessionId);
     return [...session.history]; // Return a copy to avoid external mutation
+  }
+
+  public updateUserInfo(sessionId: string, userInfo: UserInfo): void {
+    if (this.sessions[sessionId]) {
+      this.sessions[sessionId].userInfo = userInfo;
+    }
   }
 }
 

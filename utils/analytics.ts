@@ -22,6 +22,11 @@ interface ChatAnalytics {
   relevanceScore: number;
   userAgent?: string;
   ipAddress?: string;
+  userInfo?: {
+    fullname: string;
+    email: string;
+    phone?: string;
+  };
 }
 
 /**
@@ -85,7 +90,7 @@ export async function logInteraction(
   humanAssistanceNeeded: boolean = false,
   category: string = 'General',
   relevanceScore: number = 0,
-  userInfo: { userAgent?: string; ipAddress?: string } = {}
+  userInfo: { userAgent?: string; ipAddress?: string; fullname?: string; email?: string; phone?: string } = {}
 ): Promise<void> {
   try {
     // Check if analytics is enabled
@@ -108,7 +113,12 @@ export async function logInteraction(
       category,
       relevanceScore,
       userAgent: userInfo.userAgent,
-      ipAddress: userInfo.ipAddress
+      ipAddress: userInfo.ipAddress,
+      userInfo: userInfo.fullname && userInfo.email ? {
+        fullname: userInfo.fullname,
+        email: userInfo.email,
+        phone: userInfo.phone,
+      } : undefined,
     };
     
     // Insert analytics data
@@ -120,52 +130,252 @@ export async function logInteraction(
 }
 
 /**
- * Gets summary statistics for the chatbot
+ * Enhanced: Gets conversation quality metrics for active sessions, including all fields expected by the frontend
+ */
+export async function getConversationQualityMetrics(days: number = 7): Promise<any> {
+  try {
+    if (!analyticsCollection) {
+      return null;
+    }
+    const startDate = new Date();
+    startDate.setDate(startDate.getDate() - days);
+    // Fetch all interactions in the period
+    const analyticsData = await analyticsCollection.find({ timestamp: { $gte: startDate } }).toArray();
+    if (!analyticsData.length) {
+      return null;
+    }
+    // Average relevance score
+    const avgRelevanceScore = analyticsData.reduce((sum, item) => sum + Number(item.relevanceScore || 0), 0) / analyticsData.length;
+    // Human assistance rate
+    const humanAssistanceCount = analyticsData.filter(item => item.humanAssistanceNeeded).length;
+    const humanAssistanceRate = analyticsData.length > 0 ? humanAssistanceCount / analyticsData.length : 0;
+    // Category distribution
+    const categoryDistribution = analyticsData.reduce((counts, item) => {
+      counts[item.category] = Number(counts[item.category] || 0) + 1;
+      return counts;
+    }, {} as Record<string, number>);
+    // Quality over time (by day)
+    const qualityOverTimeMap = {};
+    analyticsData.forEach(item => {
+      const date = new Date(item.timestamp).toLocaleDateString();
+      if (!qualityOverTimeMap[date]) qualityOverTimeMap[date] = { relevanceSum: 0, count: 0 };
+      qualityOverTimeMap[date].relevanceSum += item.relevanceScore || 0;
+      qualityOverTimeMap[date].count += 1;
+    });
+    const qualityOverTime = Object.entries(qualityOverTimeMap).map(([date, val]) => {
+      const v = val as { relevanceSum: number; count: number };
+      return {
+        date,
+        relevanceScore: v.count > 0 ? v.relevanceSum / v.count : 0,
+        responseQuality: v.count > 0 ? v.relevanceSum / v.count : 0
+      };
+    }).sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+    // Top human assistance queries
+    const topHumanAssistance = analyticsData.filter(item => item.humanAssistanceNeeded);
+    const queryCounts = {};
+    topHumanAssistance.forEach(item => {
+      queryCounts[item.question] = Number(queryCounts[item.question] || 0) + 1;
+    });
+    const topHumanAssistanceQueries = Object.entries(queryCounts)
+      .map(([query, count]) => ({ query, count: Number(count) }))
+      .sort((a, b) => Number(b.count) - Number(a.count))
+      .slice(0, 5);
+    return {
+      period: `Last ${days} days`,
+      avgRelevanceScore,
+      avgResponseQuality: avgRelevanceScore, // No responseQuality, use relevanceScore
+      humanAssistanceRate,
+      categoryDistribution,
+      qualityOverTime,
+      topHumanAssistanceQueries
+    };
+  } catch (error) {
+    console.error('Failed to get conversation quality metrics:', error);
+    return null;
+  }
+}
+
+/**
+ * Enhanced: Gets the most common topics/categories by session interactions, with trends and percentages
+ */
+export async function getTopSessionTopics(days: number = 30, limit: number = 10): Promise<any> {
+  try {
+    if (!analyticsCollection) {
+      return null;
+    }
+    const startDate = new Date();
+    startDate.setDate(startDate.getDate() - days);
+    // Get all interactions in the period
+    const analyticsData = await analyticsCollection.find({ timestamp: { $gte: startDate } }).toArray();
+    if (!analyticsData.length) {
+      return null;
+    }
+    // Count topics
+    const topicCounts = analyticsData.reduce((counts, item) => {
+      counts[item.category] = Number(counts[item.category] || 0) + 1;
+      return counts;
+    }, {} as Record<string, number>);
+    const totalCount = Object.values(topicCounts).reduce((a, b) => Number(a) + Number(b), 0);
+    // Build topTopics array
+    const topTopics = Object.entries(topicCounts)
+      .map(([topic, count]) => ({ topic, count: Number(count), percentage: Number(totalCount) > 0 ? (Number(count) / Number(totalCount)) * 100 : 0 }))
+      .sort((a, b) => Number(b.count) - Number(a.count))
+      .slice(0, limit);
+    // Topic trends over time (by day)
+    const topicTrendsMap = {};
+    analyticsData.forEach(item => {
+      const date = new Date(item.timestamp).toLocaleDateString();
+      if (!topicTrendsMap[date]) topicTrendsMap[date] = {};
+      topicTrendsMap[date][item.category] = (topicTrendsMap[date][item.category] || 0) + 1;
+    });
+    const topicTrends = Object.entries(topicTrendsMap).map(([date, topics]) => {
+      return { date, topics: topics as Record<string, number> };
+    }).sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+    return {
+      period: `Last ${days} days`,
+      totalTopics: topTopics.length,
+      totalConversations: totalCount,
+      topTopics,
+      topicTrends
+    };
+  } catch (error) {
+    console.error('Failed to get top session topics:', error);
+    return null;
+  }
+}
+
+/**
+ * Enhanced: Analyzes user retention and returns all fields expected by the frontend
+ */
+export async function analyzeUserRetention(days: number = 30): Promise<any> {
+  try {
+    if (!analyticsCollection) {
+      return null;
+    }
+    const startDate = new Date();
+    startDate.setDate(startDate.getDate() - days);
+    // Aggregate by user (userAgent+ipAddress)
+    const userSessions = await analyticsCollection.aggregate([
+      { $match: { timestamp: { $gte: startDate }, userAgent: { $exists: true, $ne: null }, ipAddress: { $exists: true, $ne: null } } },
+      { $group: {
+        _id: { userAgent: "$userAgent", ipAddress: "$ipAddress" },
+        sessions: { $addToSet: "$sessionId" },
+        firstSeen: { $min: "$timestamp" },
+        lastSeen: { $max: "$timestamp" },
+        activity: { $push: "$timestamp" }
+      } }
+    ]).toArray();
+    if (!userSessions.length) {
+      return null;
+    }
+    // Total users
+    const totalUsers = userSessions.length;
+    // New users (firstSeen in period)
+    const newUsers = userSessions.filter(u => u.firstSeen >= startDate).length;
+    // Returning users (more than one session)
+    const returningUsers = userSessions.filter(u => u.sessions.length > 1).length;
+    // Return rate
+    const returnRate = totalUsers > 0 ? (returningUsers / totalUsers) * 100 : 0;
+    // Avg sessions per user
+    const avgSessionsPerUser = totalUsers > 0 ? userSessions.reduce((sum, u) => sum + u.sessions.length, 0) / totalUsers : 0;
+    // Retention by day (Day N retention: % of users active on day N after firstSeen)
+    const retentionByDay = Array.from({ length: 7 }, (_, i) => {
+      const day = i + 1;
+      let retained = 0;
+      userSessions.forEach(u => {
+        const first = new Date(u.firstSeen).setHours(0,0,0,0);
+        const daysActive = new Set(u.activity.map(ts => Number(Math.floor((new Date(ts).getTime() - first) / 86400000) + 1)));
+        if (daysActive.has(day)) retained++;
+      });
+      return { day, retention: totalUsers > 0 ? (retained / totalUsers) * 100 : 0 };
+    });
+    // Cohort retention (group users by week of firstSeen)
+    const cohortMap = {};
+    userSessions.forEach(u => {
+      const cohort = (() => {
+        const d = new Date(u.firstSeen);
+        return `${d.getMonth() + 1}/${d.getDate()}`;
+      })();
+      if (!cohortMap[cohort]) cohortMap[cohort] = [];
+      // For each day 1-7, check if user was active
+      const first = new Date(u.firstSeen).setHours(0,0,0,0);
+      const daysActive = new Set(u.activity.map(ts => Number(Math.floor((new Date(ts).getTime() - first) / 86400000) + 1)));
+      const retention = Array.from({ length: 7 }, (_, i) => daysActive.has(i + 1) ? 100 : 0); // 100% if active, 0% if not
+      cohortMap[cohort].push(retention);
+    });
+    const cohortRetention = Object.entries(cohortMap).map(([cohort, arr]) => {
+      const arrTyped = arr as number[][];
+      // Average retention for each day
+      const dayAverages = Array.from({ length: 7 }, (_, i) => {
+        const vals = arrTyped.map(ret => Number(ret[i]));
+        return vals.length > 0 ? vals.reduce((a, b) => Number(a) + Number(b), 0) / vals.length : 0;
+      });
+      return { cohort, retention: dayAverages };
+    });
+    return {
+      period: `Last ${days} days`,
+      totalUsers,
+      newUsers,
+      returningUsers,
+      returnRate,
+      avgSessionsPerUser,
+      retentionByDay,
+      cohortRetention
+    };
+  } catch (error) {
+    console.error('Failed to analyze user retention:', error);
+    return null;
+  }
+}
+
+/**
+ * Enhanced: Gets summary statistics for the chatbot, including daily interactions
  */
 export async function getAnalyticsSummary(days: number = 7): Promise<any> {
   try {
     if (!analyticsCollection) {
       return null;
     }
-    
     const startDate = new Date();
     startDate.setDate(startDate.getDate() - days);
-    
     // Get analytics from the specified time period
-    const analyticsData = await analyticsCollection
-      .find({ timestamp: { $gte: startDate } })
-      .toArray();
-    
+    const analyticsData = await analyticsCollection.find({ timestamp: { $gte: startDate } }).toArray();
     if (!analyticsData.length) {
       return {
         period: `Last ${days} days`,
         totalInteractions: 0,
-        message: 'No interactions recorded in this period'
+        totalConversations: 0,
+        avgResponseTimeMs: 0,
+        humanAssistancePercentage: 0,
+        categoryCounts: {},
+        dailyInteractions: []
       };
     }
-    
     // Calculate summary statistics
     const totalInteractions = analyticsData.length;
-    const avgResponseTime = analyticsData.reduce(
-      (sum, item) => sum + item.responseTimeMs, 0
-    ) / totalInteractions;
-    
-    const humanAssistanceCount = analyticsData.filter(
-      item => item.humanAssistanceNeeded
-    ).length;
-    
+    const uniqueSessionIds = new Set(analyticsData.map(item => item.sessionId));
+    const totalConversations = uniqueSessionIds.size;
+    const avgResponseTime = analyticsData.reduce((sum, item) => sum + item.responseTimeMs, 0) / totalInteractions;
+    const humanAssistanceCount = analyticsData.filter(item => item.humanAssistanceNeeded).length;
     const categoryCounts = analyticsData.reduce((counts, item) => {
-      counts[item.category] = (counts[item.category] || 0) + 1;
+      counts[item.category] = Number(counts[item.category] || 0) + 1;
       return counts;
     }, {});
-    
-    // Return summary data
+    // Daily interactions
+    const dailyMap = {};
+    analyticsData.forEach(item => {
+      const date = new Date(item.timestamp).toLocaleDateString();
+      dailyMap[date] = Number(dailyMap[date] || 0) + 1;
+    });
+    const dailyInteractions = Object.entries(dailyMap).map(([date, count]) => ({ date, count: count as number })).sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
     return {
       period: `Last ${days} days`,
       totalInteractions,
+      totalConversations,
       avgResponseTimeMs: avgResponseTime,
       humanAssistancePercentage: (humanAssistanceCount / totalInteractions) * 100,
-      categoryCounts
+      categoryCounts,
+      dailyInteractions
     };
   } catch (error) {
     console.error('Failed to get analytics summary:', error);
@@ -235,11 +445,15 @@ export async function getSessionAnalytics(sessionId: string): Promise<any> {
     const conversationFlow = interactions.map(i => ({
       timestamp: i.timestamp,
       question: i.question,
+      answer: i.answer,
       category: i.category,
       relevanceScore: i.relevanceScore,
       humanAssistanceNeeded: i.humanAssistanceNeeded,
       responseTimeMs: i.responseTimeMs
     }));
+    
+    // Get userInfo from the first interaction that has it
+    const userInfo = interactions.find(i => i.userInfo)?.userInfo;
     
     return {
       sessionId,
@@ -250,235 +464,11 @@ export async function getSessionAnalytics(sessionId: string): Promise<any> {
       avgResponseTimeMs: avgResponseTime,
       totalResponseTimeMs: totalResponseTime,
       conversationFlow,
-      hasHumanAssistance: interactions.some(i => i.humanAssistanceNeeded)
+      hasHumanAssistance: interactions.some(i => i.humanAssistanceNeeded),
+      userInfo: userInfo || null,
     };
   } catch (error) {
     console.error('Failed to get session analytics:', error);
-    return null;
-  }
-}
-
-/**
- * Gets conversation quality metrics for active sessions
- */
-export async function getConversationQualityMetrics(days: number = 7): Promise<any> {
-  try {
-    if (!analyticsCollection) {
-      return null;
-    }
-    
-    const startDate = new Date();
-    startDate.setDate(startDate.getDate() - days);
-    
-    // Get unique session IDs and their interaction counts
-    const sessions = await analyticsCollection
-      .aggregate([
-        { $match: { timestamp: { $gte: startDate } } },
-        { $group: { _id: "$sessionId", count: { $sum: 1 } } }
-      ])
-      .toArray();
-
-    if (!sessions.length) {
-      return {
-        period: `Last ${days} days`,
-        totalSessions: 0,
-        message: 'No sessions recorded in this period'
-      };
-    }
-    
-    // Categorize sessions by length
-    const singleQuestionSessions = sessions.filter(s => s.count === 1).length;
-    const shortConversations = sessions.filter(s => s.count >= 2 && s.count <= 3).length;
-    const mediumConversations = sessions.filter(s => s.count >= 4 && s.count <= 6).length;
-    const longConversations = sessions.filter(s => s.count > 6).length;
-    
-    return {
-      period: `Last ${days} days`,
-      totalSessions: sessions.length,
-      singleQuestionSessions,
-      shortConversations,
-      mediumConversations,
-      longConversations,
-      averageInteractionsPerSession: sessions.reduce((sum, s) => sum + s.count, 0) / sessions.length,
-      engagementDistribution: {
-        singleQuestion: (singleQuestionSessions / sessions.length) * 100,
-        shortConversation: (shortConversations / sessions.length) * 100,
-        mediumConversation: (mediumConversations / sessions.length) * 100,
-        longConversation: (longConversations / sessions.length) * 100
-      }
-    };
-  } catch (error) {
-    console.error('Failed to get conversation quality metrics:', error);
-    return null;
-  }
-}
-
-/**
- * Analyzes follow-up question patterns
- */
-export async function analyzeFollowUpPatterns(limit: number = 100): Promise<any> {
-  try {
-    if (!analyticsCollection) {
-      return null;
-    }
-    
-    // Get sessions with multiple interactions
-    const multiInteractionSessions = await analyticsCollection
-      .aggregate([
-        { $sort: { timestamp: 1 } },
-        { $group: { 
-          _id: "$sessionId", 
-          count: { $sum: 1 },
-          interactions: { $push: "$$ROOT" }
-        }},
-        { $match: { count: { $gt: 1 } } },
-        { $sort: { count: -1 } },
-        { $limit: limit }
-      ])
-      .toArray();
-    
-    if (!multiInteractionSessions.length) {
-      return {
-        sessionsAnalyzed: 0,
-        message: 'No multi-interaction sessions found'
-      };
-    }
-    
-    // Extract common follow-up patterns
-    const followUpCategories = {};
-    
-    multiInteractionSessions.forEach(session => {
-      // Sort interactions by timestamp (should already be sorted, but just to be safe)
-      const interactions = session.interactions.sort((a, b) => 
-        new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
-      );
-      
-      // Analyze category transitions
-      for (let i = 1; i < interactions.length; i++) {
-        const fromCategory = interactions[i-1].category;
-        const toCategory = interactions[i].category;
-        const transitionKey = `${fromCategory} → ${toCategory}`;
-        
-        followUpCategories[transitionKey] = (followUpCategories[transitionKey] || 0) + 1;
-      }
-    });
-    
-    return {
-      sessionsAnalyzed: multiInteractionSessions.length,
-      followUpPatterns: Object.entries(followUpCategories)
-        .map(([transition, count]) => ({ transition, count }))
-        .sort((a, b) => (b.count as number) - (a.count as number))
-    };
-  } catch (error) {
-    console.error('Failed to analyze follow-up patterns:', error);
-    return null;
-  }
-}
-
-/**
- * Analyzes user retention based on sessionId patterns
- */
-export async function analyzeUserRetention(days: number = 30): Promise<any> {
-  try {
-    if (!analyticsCollection) {
-      return null;
-    }
-    
-    const startDate = new Date();
-    startDate.setDate(startDate.getDate() - days);
-    
-    // Aggregate sessions by user agent and IP to identify potential returning users
-    const userSessions = await analyticsCollection
-      .aggregate([
-        { $match: { 
-          timestamp: { $gte: startDate },
-          userAgent: { $exists: true, $ne: null },
-          ipAddress: { $exists: true, $ne: null }
-        }},
-        { $group: { 
-          _id: { 
-            userAgent: "$userAgent", 
-            ipAddress: "$ipAddress" 
-          },
-          sessions: { $addToSet: "$sessionId" },
-          firstSeen: { $min: "$timestamp" },
-          lastSeen: { $max: "$timestamp" }
-        }}
-      ])
-      .toArray();
-    
-    if (!userSessions.length) {
-      return {
-        period: `Last ${days} days`,
-        totalUniqueUsers: 0,
-        message: 'No user data available for this period'
-      };
-    }
-    
-    const usersWithMultipleSessions = userSessions.filter(u => u.sessions.length > 1);
-    
-    // Calculate retention metrics
-    return {
-      period: `Last ${days} days`,
-      totalUniqueUsers: userSessions.length,
-      returningUsers: usersWithMultipleSessions.length,
-      returningPercentage: (usersWithMultipleSessions.length / userSessions.length) * 100,
-      averageSessionsPerReturningUser: usersWithMultipleSessions.length > 0 ? 
-        usersWithMultipleSessions.reduce((sum, u) => sum + u.sessions.length, 0) / usersWithMultipleSessions.length : 0
-    };
-  } catch (error) {
-    console.error('Failed to analyze user retention:', error);
-    return null;
-  }
-}
-
-/**
- * Gets the most common topics/categories by session interactions
- */
-export async function getTopSessionTopics(days: number = 30, limit: number = 10): Promise<any> {
-  try {
-    if (!analyticsCollection) {
-      return null;
-    }
-    
-    const startDate = new Date();
-    startDate.setDate(startDate.getDate() - days);
-    
-    // Get categories that lead to longer sessions
-    const topicAnalysis = await analyticsCollection
-      .aggregate([
-        { $match: { timestamp: { $gte: startDate } } },
-        // Group by session and get unique categories
-        { $group: {
-          _id: "$sessionId",
-          categories: { $addToSet: "$category" },
-          interactionCount: { $sum: 1 }
-        }},
-        // Unwind categories to count them across sessions
-        { $unwind: "$categories" },
-        // Group by category and calculate stats
-        { $group: {
-          _id: "$categories",
-          sessionCount: { $sum: 1 },
-          totalInteractions: { $sum: "$interactionCount" },
-          avgInteractionsPerSession: { $avg: "$interactionCount" }
-        }},
-        { $sort: { sessionCount: -1 } },
-        { $limit: limit }
-      ])
-      .toArray();
-    
-    return {
-      period: `Last ${days} days`,
-      topTopics: topicAnalysis.map(t => ({
-        category: t._id,
-        sessionCount: t.sessionCount,
-        totalInteractions: t.totalInteractions,
-        avgInteractionsPerSession: t.avgInteractionsPerSession
-      }))
-    };
-  } catch (error) {
-    console.error('Failed to get top session topics:', error);
     return null;
   }
 }
@@ -601,6 +591,45 @@ export async function analyzeConversationWindows(days: number = 30): Promise<any
     return result;
   } catch (error) {
     console.error('Failed to analyze conversation windows:', error);
+    return null;
+  }
+}
+
+/**
+ * Gets a list of session summaries for the given time range
+ */
+export async function getSessionSummaries(days: number = 7): Promise<any[]> {
+  try {
+    if (!analyticsCollection) {
+      return null;
+    }
+    const startDate = new Date();
+    startDate.setDate(startDate.getDate() - days);
+    // Aggregate sessions
+    const sessions = await analyticsCollection.aggregate([
+      { $match: { timestamp: { $gte: startDate } } },
+      { $group: {
+        _id: "$sessionId",
+        interactionCount: { $sum: 1 },
+        firstInteraction: { $min: "$timestamp" },
+        lastInteraction: { $max: "$timestamp" },
+        totalResponseTime: { $sum: "$responseTimeMs" },
+        userInfo: { $first: "$userInfo" }
+      }},
+      { $project: {
+        sessionId: "$_id",
+        interactionCount: 1,
+        firstInteraction: 1,
+        lastInteraction: 1,
+        sessionDurationMs: { $subtract: ["$lastInteraction", "$firstInteraction"] },
+        avgResponseTimeMs: { $cond: [ { $eq: ["$interactionCount", 0] }, 0, { $divide: ["$totalResponseTime", "$interactionCount"] } ] },
+        fullname: "$userInfo.fullname"
+      }},
+      { $sort: { lastInteraction: -1 } }
+    ]).toArray();
+    return sessions;
+  } catch (error) {
+    console.error('Failed to get session summaries:', error);
     return null;
   }
 } 

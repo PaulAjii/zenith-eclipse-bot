@@ -43,6 +43,52 @@ async function clearVectorStore() {
   }
 }
 
+// Utility: Extract section title from a chunk
+function extractSectionTitle(text: string): string | undefined {
+  // Look for lines in ALL CAPS or ending with a colon
+  const lines = text.split('\n');
+  for (const line of lines) {
+    if (/^[A-Z\s]+$/.test(line.trim()) && line.trim().length > 5) {
+      return line.trim();
+    }
+    if (/^.{3,}:$/.test(line.trim())) {
+      return line.trim().replace(/:$/, '');
+    }
+  }
+  return undefined;
+}
+
+// Utility: Detect if a chunk is an FAQ
+function isFAQChunk(text: string): boolean {
+  // Look for Q&A patterns
+  return /(^Q[:\-]?\s|^A[:\-]?\s|\bFAQ\b|Frequently Asked Questions)/im.test(text);
+}
+
+// Utility: Extract tags from content (simple keyword match)
+function extractTags(text: string): string[] {
+  const tags = [];
+  const tagKeywords = [
+    'express freight', 'compliance', 'packaging', 'certification', 'door-to-door',
+    'tracking', 'priority', 'customs', 'logistics', 'bulk', 'organic', 'non-GMO',
+    'sustainability', 'supply chain', 'urgent', 'quote', 'contact', 'export', 'import',
+    'temperature-controlled', 'animal feed', 'oil', 'meal', 'flour', 'bran', 'polymer',
+    'hazardous', 'safety', 'green', 'bio', 'carbon', 'traceability', 'delivery', 'pickup',
+    'network', 'global', 'local', 'certified', 'halal', 'kosher', 'FDA', 'EU', 'GOST',
+    'FSSC 22000', 'ISO', 'same day', 'priority', 'support', 'customer service', 'quote',
+    'pricing', 'schedule', 'timeline', 'shipment', 'tracking', 'insurance', 'storage',
+    'distribution', 'consulting', 'solutions', 'project cargo', 'OOG', 'heavy lift',
+    'perishable', 'food', 'electronics', 'chemicals', 'plastics', 'agriculture', 'wholesale',
+    'retail', 'exporter', 'importer', 'manufacturer', 'farmer', 'logistics', 'transport',
+    'air', 'ocean', 'rail', 'truck', 'service', 'product', 'feature', 'benefit', 'support',
+    'help', 'contact', 'team', 'specialist', 'manager', 'account', 'order', 'quote', 'request'
+  ];
+  const lower = text.toLowerCase();
+  for (const keyword of tagKeywords) {
+    if (lower.includes(keyword.toLowerCase())) tags.push(keyword);
+  }
+  return Array.from(new Set(tags));
+}
+
 // Process all documents in the data directory
 async function seedDocumentsWithMetadata() {
   console.log('Starting seedDocumentsWithMetadata function...');
@@ -151,16 +197,36 @@ async function seedDocumentsWithMetadata() {
       };
     }
     
-    // Split documents with appropriate chunk size
-    console.log('Splitting documents into chunks...');
+    // Split documents with improved chunking
+    console.log('Splitting documents into semantic chunks...');
     const splitter = new RecursiveCharacterTextSplitter({
-      chunkSize: 800,  // Slightly smaller chunks for better precision
+      chunkSize: 800,
       chunkOverlap: 150,
+      separators: [
+        '\n## ', '\n# ', '\n- ', '\n* ', '\nQ:', '\nA:', '\n', '. ', '! ', '? ', '; ', ': ', ', ', '  '
+      ]
     });
-    
-    console.log('Starting document splitting process...');
     const splitDocs = await splitter.splitDocuments(processedDocs);
-    console.log(`Created ${splitDocs.length} chunks from ${processedDocs.length} documents`);
+    console.log(`Created ${splitDocs.length} semantic chunks from ${processedDocs.length} documents`);
+
+    // Enrich each chunk with section title, tags, chunk_type, and FAQ flag
+    splitDocs.forEach(chunk => {
+      const sectionTitle = extractSectionTitle(chunk.pageContent);
+      const tags = extractTags(chunk.pageContent);
+      const isFAQ = isFAQChunk(chunk.pageContent);
+      let chunkType = 'section';
+      if (isFAQ) chunkType = 'faq';
+      else if (tags.includes('feature')) chunkType = 'feature';
+      else if (tags.includes('service')) chunkType = 'service';
+      else if (tags.includes('product')) chunkType = 'product';
+      chunk.metadata = {
+        ...chunk.metadata,
+        section_title: sectionTitle,
+        tags,
+        chunk_type: chunkType,
+        is_faq: isFAQ
+      };
+    });
     
     // Add documents to vector store
     console.log('Adding documents to vector store...');

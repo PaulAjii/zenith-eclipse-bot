@@ -6,6 +6,7 @@ import MetricCard from './MetricCard';
 type OverviewData = {
   period: string;
   totalInteractions: number;
+  totalConversations: number;
   avgResponseTimeMs: number;
   humanAssistancePercentage: number;
   categoryCounts: Record<string, number>;
@@ -95,11 +96,21 @@ export default function OverviewPanel({ timeRange }: { timeRange: number }) {
       
       <div className="metrics-grid">
         <MetricCard 
-          title="Total Conversations" 
+          title="Total Interactions" 
           value={data.totalInteractions.toString()}
           icon={
             <svg viewBox="0 0 24 24" width="24" height="24" stroke="currentColor" strokeWidth="2" fill="none">
               <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+            </svg>
+          }
+        />
+        <MetricCard 
+          title="Total Conversations" 
+          value={data.totalConversations.toString()}
+          icon={
+            <svg viewBox="0 0 24 24" width="24" height="24" stroke="currentColor" strokeWidth="2" fill="none">
+              <path d="M17 8h2a2 2 0 0 1 2 2v6a2 2 0 0 1-2 2h-2v4l-4-4H9a2 2 0 0 1-2-2v-1"></path>
+              <path d="M7 18H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v1"></path>
             </svg>
           }
         />
@@ -123,15 +134,6 @@ export default function OverviewPanel({ timeRange }: { timeRange: number }) {
             </svg>
           }
         />
-        <MetricCard 
-          title="Categories" 
-          value={Object.keys(data.categoryCounts).length.toString()}
-          icon={
-            <svg viewBox="0 0 24 24" width="24" height="24" stroke="currentColor" strokeWidth="2" fill="none">
-              <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path>
-            </svg>
-          }
-        />
       </div>
       
       <div className="charts-container">
@@ -139,32 +141,54 @@ export default function OverviewPanel({ timeRange }: { timeRange: number }) {
           <h3>Conversation Volume</h3>
           <div className="chart-area">
             <svg width="100%" height="200" viewBox="0 0 600 200">
-              {chartData.map((dataPoint, index, array) => {
-                const x = (index / (array.length - 1)) * 570 + 15;
-                const maxCount = Math.max(...array.map(d => d.count));
-                const y = 180 - (dataPoint.count / maxCount) * 150;
+              {chartData.length > 0 && chartData.map((dataPoint, index, array) => {
+                // Ensure array length > 1 to avoid division by zero
+                const xStep = array.length > 1 ? 570 / (array.length - 1) : 570;
+                const x = 15 + index * xStep;
+                
+                // Find max count safely, defaulting to 1 if no valid counts
+                const counts = array.map(d => d.count).filter(count => typeof count === 'number' && !isNaN(count));
+                const maxCount = counts.length > 0 ? Math.max(...counts) : 1;
+                
+                // Default y to bottom if count is invalid
+                const y = typeof dataPoint.count === 'number' && !isNaN(dataPoint.count) && maxCount > 0
+                  ? 180 - (dataPoint.count / maxCount) * 150
+                  : 180;
+                
+                // Only use next point if it exists
                 const nextIndex = index + 1;
+                const hasNextPoint = nextIndex < array.length;
+                
+                // Calculate next point's position safely
+                const nextY = hasNextPoint && typeof array[nextIndex].count === 'number' && !isNaN(array[nextIndex].count) && maxCount > 0
+                  ? 180 - (array[nextIndex].count / maxCount) * 150
+                  : 180;
+                
+                const nextX = hasNextPoint ? 15 + nextIndex * xStep : x;
                 
                 return (
                   <g key={index}>
                     <circle cx={x} cy={y} r="4" fill="#1a3b5d" />
-                    {index < array.length - 1 && (
+                    {hasNextPoint && (
                       <line 
                         x1={x} 
                         y1={y} 
-                        x2={(nextIndex / (array.length - 1)) * 570 + 15} 
-                        y2={180 - (array[nextIndex].count / maxCount) * 150}
+                        x2={nextX} 
+                        y2={nextY}
                         stroke="#1a3b5d" 
                         strokeWidth="2" 
                       />
                     )}
                     {index % Math.max(1, Math.floor(array.length / 7)) === 0 && (
-                      <text x={x} y="195" textAnchor="middle" fontSize="10">{dataPoint.date}</text>
+                      <text x={x.toString()} y="195" textAnchor="middle" fontSize="10">{dataPoint.date}</text>
                     )}
                   </g>
                 );
               })}
               <line x1="15" y1="180" x2="585" y2="180" stroke="#e1e4e8" strokeWidth="1" />
+              {chartData.length === 0 && (
+                <text x="300" y="100" textAnchor="middle" fill="#718096">No data available</text>
+              )}
             </svg>
           </div>
         </div>
@@ -182,6 +206,7 @@ export default function OverviewPanel({ timeRange }: { timeRange: number }) {
                     const angle = (curr.value / 100) * Math.PI * 2;
                     const endAngle = startAngle + angle;
                     
+                    // Safely calculate coordinates
                     const x1 = 100 + 80 * Math.cos(startAngle);
                     const y1 = 100 + 80 * Math.sin(startAngle);
                     const x2 = 100 + 80 * Math.cos(endAngle);
@@ -200,13 +225,13 @@ export default function OverviewPanel({ timeRange }: { timeRange: number }) {
                         ...acc.elements,
                         <path
                           key={i}
-                          d={`M 100 100 L ${x1} ${y1} A 80 80 0 ${largeArcFlag} 1 ${x2} ${y2} Z`}
+                          d={`M 100 100 L ${x1.toFixed(2)} ${y1.toFixed(2)} A 80 80 0 ${largeArcFlag} 1 ${x2.toFixed(2)} ${y2.toFixed(2)} Z`}
                           fill={colors[i % colors.length]}
                         />,
                         <text
                           key={`label-${i}`}
-                          x={labelX}
-                          y={labelY}
+                          x={labelX.toFixed(2)}
+                          y={labelY.toFixed(2)}
                           textAnchor="middle"
                           fontSize="10"
                           fill="#fff"

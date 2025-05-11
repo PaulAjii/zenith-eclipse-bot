@@ -11,6 +11,11 @@ import { v4 as uuidv4 } from 'uuid';
 
 interface ChatModalProps {
   onClose: () => void;
+  userInfo: {
+    fullname: string;
+    email: string;
+    phone?: string;
+  };
 }
 
 // Define error types for better error handling
@@ -22,7 +27,7 @@ interface ErrorState {
   message: string;
 }
 
-const ChatModal = ({ onClose }: ChatModalProps) => {
+const ChatModal = ({ onClose, userInfo }: ChatModalProps) => {
   const [isLoading, setIsLoading] = useState(false);
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
@@ -74,6 +79,19 @@ const ChatModal = ({ onClose }: ChatModalProps) => {
       chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight;
     }
   }, [messages]);
+
+  useEffect(() => {
+    if (messages.length === 0 && userInfo) {
+      // Greet the user by name as the first assistant message
+      setMessages([
+        {
+          role: 'assistant',
+          content: `Hello, ${userInfo.fullname}! I'm your Zenith Eclipse assistant. How can I help you today?`,
+          id: 'greeting',
+        },
+      ]);
+    }
+  }, [userInfo]);
 
   // Validate input
   const validateInput = (text: string): { valid: boolean; message: string } => {
@@ -129,7 +147,8 @@ const ChatModal = ({ onClose }: ChatModalProps) => {
           },
           body: JSON.stringify({
             prompt: prompt.trim(),
-            sessionId: sessionId
+            sessionId: sessionId,
+            userInfo: userInfo,
           }),
           signal: controller.signal
         });
@@ -291,13 +310,6 @@ const ChatModal = ({ onClose }: ChatModalProps) => {
         </div>
         
         <div className="chat__container modal-chat" ref={chatContainerRef}>
-          <div ref={welcomeMessageRef}>
-            <ChatBubble
-              content="Hello, how can I help you today? I'm your Zenith Eclipse assistant."
-              role="assistant"
-            />
-          </div>
-          
           {messages.map((message, index) => (
             <div 
               key={`message-${index}`}

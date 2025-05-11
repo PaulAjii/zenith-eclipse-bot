@@ -30,62 +30,13 @@ export default function TopicsPanel({ timeRange }: { timeRange: number }) {
       setIsLoading(true);
       setError(null);
       try {
-        // In a real app, this would be:
-        // const res = await fetch(`/api/analytics/top-topics?days=${timeRange}`);
-        
-        // For the mockup, we'll generate mock data
-        await new Promise(resolve => setTimeout(resolve, 800));
-        
-        // Generate topic data
-        const mockTopics: TopicData[] = [
-          { topic: "Wheat", count: Math.floor(Math.random() * 100) + 50, percentage: 0 },
-          { topic: "Logistics", count: Math.floor(Math.random() * 80) + 40, percentage: 0 },
-          { topic: "Pricing", count: Math.floor(Math.random() * 60) + 30, percentage: 0 },
-          { topic: "Shipping", count: Math.floor(Math.random() * 50) + 25, percentage: 0 },
-          { topic: "Quality", count: Math.floor(Math.random() * 40) + 20, percentage: 0 },
-          { topic: "Barley", count: Math.floor(Math.random() * 30) + 15, percentage: 0 },
-          { topic: "Oilseeds", count: Math.floor(Math.random() * 25) + 10, percentage: 0 },
-          { topic: "Certifications", count: Math.floor(Math.random() * 20) + 5, percentage: 0 },
-        ];
-        
-        // Calculate percentages
-        const totalCount = mockTopics.reduce((sum, topic) => sum + topic.count, 0);
-        mockTopics.forEach(topic => {
-          topic.percentage = (topic.count / totalCount) * 100;
-        });
-        
-        // Sort by count
-        mockTopics.sort((a, b) => b.count - a.count);
-        
-        // Generate topic trends over time
-        const topicNames = mockTopics.slice(0, 5).map(t => t.topic);
-        const mockTrends = Array.from({ length: timeRange }, (_, i) => {
-          const date = new Date(Date.now() - (timeRange - i - 1) * 86400000);
-          const topics: Record<string, number> = {};
-          
-          topicNames.forEach(topic => {
-            // Create a somewhat realistic trend with some randomness
-            const baseValue = mockTopics.find(t => t.topic === topic)?.count || 20;
-            const dailyValue = Math.max(1, Math.floor(baseValue / timeRange * (0.7 + Math.random() * 0.6)));
-            topics[topic] = dailyValue;
-          });
-          
-          return {
-            date: date.toLocaleDateString(),
-            topics
-          };
-        });
-        
-        // Mock data structure
-        const mockData: TopicsMetrics = {
-          period: `Last ${timeRange} days`,
-          totalTopics: mockTopics.length,
-          totalConversations: totalCount,
-          topTopics: mockTopics,
-          topicTrends: mockTrends
-        };
-        
-        setData(mockData);
+        const res = await fetch(`/api/analytics/top-topics?days=${timeRange}`);
+        const result = await res.json();
+        if (result.status === 'Success') {
+          setData(result.data);
+        } else {
+          throw new Error(result.message || 'Failed to fetch topics data');
+        }
       } catch (err) {
         console.error('Error fetching topics data:', err);
         setError(err instanceof Error ? err.message : 'Unknown error');
@@ -93,7 +44,6 @@ export default function TopicsPanel({ timeRange }: { timeRange: number }) {
         setIsLoading(false);
       }
     }
-
     fetchData();
   }, [timeRange]);
 
@@ -200,7 +150,7 @@ export default function TopicsPanel({ timeRange }: { timeRange: number }) {
               <line x1="50" y1="100" x2="580" y2="100" stroke="#e1e4e8" strokeWidth="0.5" strokeDasharray="5,5" />
               
               {/* Plot the data */}
-              {data.topicTrends && topFiveTopics.map((topicName, topicIndex) => {
+              {data.topicTrends && data.topicTrends.length > 0 && topFiveTopics.map((topicName, topicIndex) => {
                 // Calculate the maximum value for scaling
                 let maxValue = 0;
                 data.topicTrends?.forEach(day => {
@@ -209,11 +159,15 @@ export default function TopicsPanel({ timeRange }: { timeRange: number }) {
                   });
                 });
                 
+                // Ensure we don't divide by zero
+                maxValue = maxValue || 1;
+                
                 // Plot points and lines for each topic
                 return (
                   <g key={topicIndex}>
                     {data.topicTrends?.map((day, dayIndex, days) => {
-                      const xStep = 530 / (days.length - 1);
+                      // Ensure we don't divide by zero
+                      const xStep = days.length > 1 ? 530 / (days.length - 1) : 530;
                       const x = 50 + dayIndex * xStep;
                       const value = day.topics[topicName] || 0;
                       const y = 250 - (value / maxValue) * 200;
@@ -221,18 +175,18 @@ export default function TopicsPanel({ timeRange }: { timeRange: number }) {
                       return (
                         <g key={`${topicName}-${dayIndex}`}>
                           <circle 
-                            cx={x} 
-                            cy={y} 
+                            cx={x.toFixed(2)} 
+                            cy={y.toFixed(2)} 
                             r="3" 
                             fill={colors[topicIndex % colors.length]} 
                           />
                           
                           {dayIndex < days.length - 1 && (
                             <line 
-                              x1={x} 
-                              y1={y} 
-                              x2={50 + (dayIndex + 1) * xStep} 
-                              y2={250 - ((days[dayIndex + 1].topics[topicName] || 0) / maxValue) * 200}
+                              x1={x.toFixed(2)} 
+                              y1={y.toFixed(2)} 
+                              x2={(50 + (dayIndex + 1) * xStep).toFixed(2)} 
+                              y2={(250 - ((days[dayIndex + 1].topics[topicName] || 0) / maxValue) * 200).toFixed(2)}
                               stroke={colors[topicIndex % colors.length]} 
                               strokeWidth="2" 
                             />
@@ -245,12 +199,13 @@ export default function TopicsPanel({ timeRange }: { timeRange: number }) {
               })}
               
               {/* X-axis labels */}
-              {data.topicTrends && data.topicTrends.map((day, index, array) => {
-                const xStep = 530 / (array.length - 1);
+              {data.topicTrends && data.topicTrends.length > 0 && data.topicTrends.map((day, index, array) => {
+                // Ensure we don't divide by zero
+                const xStep = array.length > 1 ? 530 / (array.length - 1) : 530;
                 const x = 50 + index * xStep;
                 
                 return index % Math.max(1, Math.floor(array.length / 7)) === 0 ? (
-                  <text key={index} x={x} y="270" textAnchor="middle" fontSize="10">{day.date}</text>
+                  <text key={index} x={x.toFixed(2)} y="270" textAnchor="middle" fontSize="10">{day.date}</text>
                 ) : null;
               })}
               

@@ -30,49 +30,13 @@ export default function QualityPanel({ timeRange }: { timeRange: number }) {
       setIsLoading(true);
       setError(null);
       try {
-        // In a real app, this would be:
-        // const res = await fetch(`/api/analytics/conversation-quality?days=${timeRange}`);
-        
-        // For the mockup, we'll generate mock data
-        await new Promise(resolve => setTimeout(resolve, 800));
-        
-        // Generate quality data for time series
-        const timeSeriesData = Array.from({ length: timeRange }, (_, i) => {
-          const date = new Date(Date.now() - (timeRange - i - 1) * 86400000);
-          return {
-            date: date.toLocaleDateString(),
-            relevanceScore: 0.65 + Math.random() * 0.2,
-            responseQuality: 0.7 + Math.random() * 0.25
-          };
-        });
-        
-        // Generate human assistance queries
-        const assistanceQueries = [
-          { query: "What are your current wheat prices?", count: Math.floor(Math.random() * 10) + 5 },
-          { query: "Can you arrange shipping to South Korea?", count: Math.floor(Math.random() * 10) + 3 },
-          { query: "Do you offer credit terms for new customers?", count: Math.floor(Math.random() * 8) + 2 },
-          { query: "What documentation do you require for customs?", count: Math.floor(Math.random() * 7) + 1 },
-          { query: "How quickly can you process a rush order?", count: Math.floor(Math.random() * 5) + 1 }
-        ];
-        
-        // Mock data structure that would come from the API
-        const mockData: QualityMetrics = {
-          period: `Last ${timeRange} days`,
-          avgRelevanceScore: 0.78,
-          avgResponseQuality: 0.85,
-          humanAssistanceRate: 0.12,
-          categoryDistribution: {
-            "Products": Math.floor(Math.random() * 50) + 30,
-            "Logistics": Math.floor(Math.random() * 40) + 20,
-            "Pricing": Math.floor(Math.random() * 30) + 10,
-            "Technical": Math.floor(Math.random() * 20) + 5,
-            "General": Math.floor(Math.random() * 15) + 5
-          },
-          qualityOverTime: timeSeriesData,
-          topHumanAssistanceQueries: assistanceQueries
-        };
-        
-        setData(mockData);
+        const res = await fetch(`/api/analytics/conversation-quality?days=${timeRange}`);
+        const result = await res.json();
+        if (result.status === 'Success') {
+          setData(result.data);
+        } else {
+          throw new Error(result.message || 'Failed to fetch quality metrics');
+        }
       } catch (err) {
         console.error('Error fetching quality data:', err);
         setError(err instanceof Error ? err.message : 'Unknown error');
@@ -80,7 +44,6 @@ export default function QualityPanel({ timeRange }: { timeRange: number }) {
         setIsLoading(false);
       }
     }
-
     fetchData();
   }, [timeRange]);
 
@@ -188,8 +151,9 @@ export default function QualityPanel({ timeRange }: { timeRange: number }) {
               <line x1="50" y1="70" x2="580" y2="70" stroke="#e1e4e8" strokeWidth="0.5" strokeDasharray="5,5" />
               
               {/* Plot the data */}
-              {data.qualityOverTime && data.qualityOverTime.map((point, index, array) => {
-                const xStep = (530) / (array.length - 1);
+              {data.qualityOverTime && data.qualityOverTime.length > 0 && data.qualityOverTime.map((point, index, array) => {
+                // Ensure we don't divide by zero
+                const xStep = array.length > 1 ? 530 / (array.length - 1) : 530;
                 const x = 50 + index * xStep;
                 
                 // Calculate Y positions (inverted, since SVG y=0 is at the top)
@@ -199,25 +163,25 @@ export default function QualityPanel({ timeRange }: { timeRange: number }) {
                 return (
                   <g key={index}>
                     {/* Plot points */}
-                    <circle cx={x} cy={relevanceY} r="4" fill="#4b77b8" />
-                    <circle cx={x} cy={qualityY} r="4" fill="#1a3b5d" />
+                    <circle cx={x.toFixed(2)} cy={relevanceY.toFixed(2)} r="4" fill="#4b77b8" />
+                    <circle cx={x.toFixed(2)} cy={qualityY.toFixed(2)} r="4" fill="#1a3b5d" />
                     
                     {/* Connect lines */}
                     {index < array.length - 1 && (
                       <>
                         <line 
-                          x1={x} 
-                          y1={relevanceY} 
-                          x2={50 + (index + 1) * xStep} 
-                          y2={220 - (array[index + 1].relevanceScore * 190)}
+                          x1={x.toFixed(2)} 
+                          y1={relevanceY.toFixed(2)} 
+                          x2={(50 + (index + 1) * xStep).toFixed(2)} 
+                          y2={(220 - (array[index + 1].relevanceScore * 190)).toFixed(2)}
                           stroke="#4b77b8" 
                           strokeWidth="2" 
                         />
                         <line 
-                          x1={x} 
-                          y1={qualityY} 
-                          x2={50 + (index + 1) * xStep} 
-                          y2={220 - (array[index + 1].responseQuality * 190)}
+                          x1={x.toFixed(2)} 
+                          y1={qualityY.toFixed(2)} 
+                          x2={(50 + (index + 1) * xStep).toFixed(2)} 
+                          y2={(220 - (array[index + 1].responseQuality * 190)).toFixed(2)}
                           stroke="#1a3b5d" 
                           strokeWidth="2" 
                         />
@@ -226,11 +190,16 @@ export default function QualityPanel({ timeRange }: { timeRange: number }) {
                     
                     {/* X-axis labels (show every few days to avoid crowding) */}
                     {index % Math.max(1, Math.floor(array.length / 7)) === 0 && (
-                      <text x={x} y="235" textAnchor="middle" fontSize="10">{point.date}</text>
+                      <text x={x.toFixed(2)} y="235" textAnchor="middle" fontSize="10">{point.date}</text>
                     )}
                   </g>
                 );
               })}
+              
+              {/* Empty state if no data */}
+              {(!data.qualityOverTime || data.qualityOverTime.length === 0) && (
+                <text x="300" y="125" textAnchor="middle" fill="#718096">No quality data available</text>
+              )}
               
               {/* Legend */}
               <circle cx="480" cy="25" r="4" fill="#1a3b5d" />
@@ -244,20 +213,30 @@ export default function QualityPanel({ timeRange }: { timeRange: number }) {
         <div className="chart-box top-queries">
           <h3>Top Queries Requiring Human Assistance</h3>
           <div className="queries-list">
-            {data.topHumanAssistanceQueries && data.topHumanAssistanceQueries.map((item, index) => (
-              <div key={index} className="query-item">
-                <div className="query-text">&ldquo;{item.query}&rdquo;</div>
-                <div className="query-count">{item.count} occurrences</div>
-                <div className="query-bar-container">
-                  <div 
-                    className="query-bar" 
-                    style={{ 
-                      width: `${Math.min(100, (item.count / Math.max(...data.topHumanAssistanceQueries!.map(q => q.count))) * 100)}%` 
-                    }}
-                  ></div>
-                </div>
-              </div>
-            ))}
+            {data.topHumanAssistanceQueries && data.topHumanAssistanceQueries.length > 0 ? (
+              data.topHumanAssistanceQueries.map((item, index) => {
+                // Calculate max count safely
+                const maxCount = Math.max(...data.topHumanAssistanceQueries!.map(q => q.count || 0)) || 1;
+                const percentage = (item.count / maxCount) * 100;
+                
+                return (
+                  <div key={index} className="query-item">
+                    <div className="query-text">&ldquo;{item.query}&rdquo;</div>
+                    <div className="query-count">{item.count} occurrences</div>
+                    <div className="query-bar-container">
+                      <div 
+                        className="query-bar" 
+                        style={{ 
+                          width: `${Math.min(100, percentage)}%` 
+                        }}
+                      ></div>
+                    </div>
+                  </div>
+                );
+              })
+            ) : (
+              <div className="no-data">No queries requiring human assistance found</div>
+            )}
           </div>
         </div>
       </div>
@@ -265,27 +244,32 @@ export default function QualityPanel({ timeRange }: { timeRange: number }) {
       <div className="category-distribution">
         <h3>Category Distribution</h3>
         <div className="bar-chart">
-          {Object.entries(data.categoryDistribution).map(([category, count], index) => {
-            const totalCount = Object.values(data.categoryDistribution).reduce((a, b) => a + b, 0);
-            const percentage = (count / totalCount) * 100;
-            const colors = ['#1a3b5d', '#4b77b8', '#7ca1db', '#a5c1ea', '#d0e0f7'];
-            
-            return (
-              <div key={index} className="category-bar-container">
-                <div className="category-label">{category}</div>
-                <div className="bar-container">
-                  <div 
-                    className="bar" 
-                    style={{ 
-                      width: `${percentage}%`,
-                      backgroundColor: colors[index % colors.length] 
-                    }}
-                  ></div>
-                  <span className="bar-value">{percentage.toFixed(1)}%</span>
+          {Object.entries(data.categoryDistribution).length > 0 ? (
+            Object.entries(data.categoryDistribution).map(([category, count], index) => {
+              // Calculate total safely
+              const totalCount = Object.values(data.categoryDistribution).reduce((a, b) => a + b, 0) || 1;
+              const percentage = (count / totalCount) * 100;
+              const colors = ['#1a3b5d', '#4b77b8', '#7ca1db', '#a5c1ea', '#d0e0f7'];
+              
+              return (
+                <div key={index} className="category-bar-container">
+                  <div className="category-label">{category}</div>
+                  <div className="bar-container">
+                    <div 
+                      className="bar" 
+                      style={{ 
+                        width: `${percentage.toFixed(1)}%`,
+                        backgroundColor: colors[index % colors.length] 
+                      }}
+                    ></div>
+                    <span className="bar-value">{percentage.toFixed(1)}%</span>
+                  </div>
                 </div>
-              </div>
-            );
-          })}
+              );
+            })
+          ) : (
+            <div className="no-data">No category data available</div>
+          )}
         </div>
       </div>
     </div>

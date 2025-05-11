@@ -1,0 +1,75 @@
+// This file is no longer used - renamed to .bak
+// We've moved the analytics initialization to server components only
+// to prevent MongoDB from being loaded in the browser
+
+import { initAnalytics, closeAnalyticsConnection } from '@/utils/analytics';
+import { NextResponse } from 'next/server';
+
+// Initialize analytics on module import
+let analyticsInitialized = false;
+let initializationPromise: Promise<boolean> | null = null;
+
+// Function to get or create the initialization promise
+export function getAnalyticsInitialization() {
+  if (!initializationPromise) {
+    // Create a promise that we can reuse for all calls
+    initializationPromise = initAnalytics().then(success => {
+      analyticsInitialized = success;
+      if (success) {
+        console.log('Analytics system initialized successfully');
+      } else {
+        console.warn('Analytics system initialization failed');
+      }
+      return success;
+    }).catch(err => {
+      console.error('Error initializing analytics:', err);
+      return false;
+    });
+  }
+  
+  return { 
+    initialized: analyticsInitialized,
+    initPromise: initializationPromise 
+  };
+}
+
+/**
+ * Helper function for API routes to ensure analytics is initialized
+ * Returns a NextResponse error if initialization fails, otherwise null
+ */
+export async function ensureAnalyticsInitialized() {
+  const { initialized, initPromise } = getAnalyticsInitialization();
+  
+  // If not yet initialized, wait for initialization to complete
+  if (!initialized) {
+    const success = await initPromise;
+    if (!success) {
+      return NextResponse.json(
+        {
+          status: 'Error',
+          message: 'Analytics service is not available - initialization failed'
+        },
+        { status: 503 }
+      );
+    }
+  }
+  
+  return null; // No error, continue with the route handler
+}
+
+// Handle graceful shutdown
+if (typeof process !== 'undefined') {
+  const handleShutdown = async () => {
+    console.log('Closing analytics connections...');
+    await closeAnalyticsConnection();
+    console.log('Analytics connections closed.');
+    process.exit(0);
+  };
+
+  // Register shutdown handlers
+  process.on('SIGINT', handleShutdown);
+  process.on('SIGTERM', handleShutdown);
+}
+
+// Initialize on module load
+getAnalyticsInitialization(); 

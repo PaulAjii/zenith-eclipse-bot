@@ -10,6 +10,7 @@ interface Session {
   lastInteraction: string;
   sessionDurationMs: number;
   avgResponseTimeMs: number;
+  fullname?: string;
 }
 
 export default function SessionsPanel({ timeRange }: { timeRange: number }) {
@@ -21,37 +22,18 @@ export default function SessionsPanel({ timeRange }: { timeRange: number }) {
   const [sortBy, setSortBy] = useState<keyof Session>('lastInteraction');
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('desc');
 
-  // Mock data - in a real app, this would fetch from an API endpoint
   useEffect(() => {
     async function fetchSessions() {
       setIsLoading(true);
       setError(null);
-      
-      // In a real app, this would be:
-      // const res = await fetch(`/api/analytics/sessions?days=${timeRange}`);
-      
-      // For the mockup we'll generate random data
       try {
-        // Simulate API delay
-        await new Promise(resolve => setTimeout(resolve, 800));
-        
-        const mockSessions: Session[] = Array.from({ length: 25 }, (_, i) => {
-          const lastInteraction = new Date(Date.now() - Math.random() * timeRange * 86400000);
-          const sessionDuration = Math.floor(Math.random() * 1800000); // 0-30 minutes
-          const firstInteraction = new Date(lastInteraction.getTime() - sessionDuration);
-          const interactionCount = Math.floor(Math.random() * 20) + 1;
-          
-          return {
-            sessionId: `session-${Date.now()}-${i}`,
-            interactionCount,
-            firstInteraction: firstInteraction.toISOString(),
-            lastInteraction: lastInteraction.toISOString(),
-            sessionDurationMs: sessionDuration,
-            avgResponseTimeMs: Math.floor(Math.random() * 3000) + 500,
-          };
-        });
-        
-        setSessions(mockSessions);
+        const res = await fetch(`/api/analytics/sessions?days=${timeRange}`);
+        const result = await res.json();
+        if (result.status === 'Success') {
+          setSessions(result.data);
+        } else {
+          throw new Error(result.message || 'Failed to fetch sessions');
+        }
       } catch (err) {
         console.error("Error fetching sessions:", err);
         setError(err instanceof Error ? err.message : 'Unknown error');
@@ -59,7 +41,6 @@ export default function SessionsPanel({ timeRange }: { timeRange: number }) {
         setIsLoading(false);
       }
     }
-    
     fetchSessions();
   }, [timeRange]);
 
@@ -74,7 +55,9 @@ export default function SessionsPanel({ timeRange }: { timeRange: number }) {
 
   const filteredSessions = sessions.filter(session => {
     if (!searchQuery) return true;
-    return session.sessionId.toLowerCase().includes(searchQuery.toLowerCase());
+    const fullnameMatch = session.fullname?.toLowerCase().includes(searchQuery.toLowerCase()) || false;
+    const sessionIdMatch = session.sessionId.toLowerCase().includes(searchQuery.toLowerCase());
+    return fullnameMatch || sessionIdMatch;
   });
 
   const sortedSessions = [...filteredSessions].sort((a, b) => {
@@ -162,8 +145,14 @@ export default function SessionsPanel({ timeRange }: { timeRange: number }) {
                       <span className="sort-indicator">{sortDir === 'asc' ? '▲' : '▼'}</span>
                     )}
                   </th>
+                  <th onClick={() => handleSort('fullname')}>
+                    User
+                    {sortBy === 'fullname' && (
+                      <span className="sort-indicator">{sortDir === 'asc' ? '▲' : '▼'}</span>
+                    )}
+                  </th>
                   <th onClick={() => handleSort('interactionCount')}>
-                    Messages
+                    Interactions
                     {sortBy === 'interactionCount' && (
                       <span className="sort-indicator">{sortDir === 'asc' ? '▲' : '▼'}</span>
                     )}
@@ -193,11 +182,38 @@ export default function SessionsPanel({ timeRange }: { timeRange: number }) {
                 {sortedSessions.length > 0 ? (
                   sortedSessions.map(session => (
                     <tr key={session.sessionId}>
-                      <td>{session.sessionId.substring(0, 12)}...</td>
+                      <td>
+                        <div className="session-id-container">
+                          <span className="truncated-id" title={session.sessionId}>
+                            {session.sessionId.substring(0, 12)}...
+                          </span>
+                          <button 
+                            className="copy-id-btn" 
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              navigator.clipboard.writeText(session.sessionId);
+                              const tooltip = e.currentTarget.querySelector('.copy-tooltip');
+                              if (tooltip) {
+                                tooltip.classList.add('show');
+                                setTimeout(() => tooltip.classList.remove('show'), 1500);
+                              }
+                            }}
+                            title="Copy Session ID"
+                          >
+                            <svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" strokeWidth="2" fill="none">
+                              <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                              <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                            </svg>
+                            <span className="copy-tooltip">Copied!</span>
+                          </button>
+                          <div className="full-session-id-tooltip">{session.sessionId}</div>
+                        </div>
+                      </td>
+                      <td>{session.fullname || 'Anonymous'}</td>
                       <td>{session.interactionCount}</td>
                       <td>{new Date(session.lastInteraction).toLocaleString()}</td>
                       <td>{formatDuration(session.sessionDurationMs)}</td>
-                      <td>{session.avgResponseTimeMs}ms</td>
+                      <td>{Math.round(session.avgResponseTimeMs)}ms</td>
                       <td>
                         <button 
                           className="view-session-btn"
@@ -210,7 +226,7 @@ export default function SessionsPanel({ timeRange }: { timeRange: number }) {
                   ))
                 ) : (
                   <tr>
-                    <td colSpan={6} className="no-data">
+                    <td colSpan={7} className="no-data">
                       {searchQuery ? 'No sessions match your search' : 'No sessions found for this time period'}
                     </td>
                   </tr>

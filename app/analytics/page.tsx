@@ -7,7 +7,8 @@ import OverviewPanel from '../components/analytics/OverviewPanel';
 import QualityPanel from '../components/analytics/QualityPanel';
 import SessionsPanel from '../components/analytics/SessionsPanel';
 import TopicsPanel from '../components/analytics/TopicsPanel';
-import RetentionPanel from '../components/analytics/RetentionPanel';
+import ConversationWindowsPanel from '../components/analytics/ConversationWindowsPanel';
+import VoiceAnalyticsPanel from '../components/analytics/VoiceAnalyticsPanel';
 
 export default function AnalyticsDashboard() {
   const [timeRange, setTimeRange] = useState(7); // default 7 days
@@ -82,10 +83,16 @@ export default function AnalyticsDashboard() {
           Topics
         </button>
         <button 
-          className={activeTab === 'retention' ? 'active' : ''} 
-          onClick={() => setActiveTab('retention')}
+          className={activeTab === 'conversation-windows' ? 'active' : ''} 
+          onClick={() => setActiveTab('conversation-windows')}
         >
-          User Retention
+          Conversation Windows
+        </button>
+        <button 
+          className={activeTab === 'voice-analytics' ? 'active' : ''} 
+          onClick={() => setActiveTab('voice-analytics')}
+        >
+          Voice Analytics
         </button>
       </nav>
       
@@ -102,8 +109,11 @@ export default function AnalyticsDashboard() {
         {activeTab === 'topics' && (
           <TopicsPanel timeRange={timeRange} />
         )}
-        {activeTab === 'retention' && (
-          <RetentionPanel timeRange={timeRange} />
+        {activeTab === 'conversation-windows' && (
+          <ConversationWindowsPanel timeRange={timeRange} />
+        )}
+        {activeTab === 'voice-analytics' && (
+          <VoiceAnalyticsPanel timeRange={timeRange} />
         )}
       </div>
     </div>
