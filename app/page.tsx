@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import Image from 'next/image';
 import ChatModal from './components/ChatModal';
-import VoiceChat from './components/VoiceChat';
+import ElevenLabsVoiceModal from './components/ElevenLabsVoiceModal';
 import { useRouter } from 'next/navigation';
 import { UserInfoProvider, useUserInfo } from './components/UserInfoContext';
 import UserInfoModal from './components/UserInfoModal';
@@ -138,7 +138,7 @@ function HomePageContent() {
       </main>
 
       {showChatModal && userInfo && <ChatModal onClose={handleCloseChat} userInfo={userInfo} />}
-      {showCallModal && userInfo && <VoiceChat onClose={handleCloseCallModal} userInfo={userInfo} />}
+      {showCallModal && userInfo && <ElevenLabsVoiceModal onClose={handleCloseCallModal} userInfo={userInfo} />}
       {pendingAction && !userInfo && (
         <UserInfoModal onSubmit={handleUserInfoSubmit} />
       )}

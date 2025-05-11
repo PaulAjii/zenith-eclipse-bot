@@ -11,6 +11,7 @@
     "seed:clear": "tsx utils/enhancedSeeding.ts --clear"
   },
   "dependencies": {
+    "@11labs/react": "^0.1.4",
     "@ai-sdk/langchain": "1.0.0-canary.7",
     "@ai-sdk/react": "^1.2.11",
     "@langchain/community": "^0.3.42",

@@ -95,18 +95,7 @@ const VoiceChat = ({ onClose, userInfo }: ChatModalProps) => {
         const response = await getChatResponse(prompt);
         const responseData = await response.json();
         const botResponse = responseData.message;
-        // Log to voice analytics
-        fetch('/api/voice-analytics', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            sessionId,
-            userInfo,
-            prompt,
-            response: botResponse,
-            timestamp: new Date().toISOString(),
-          }),
-        });
+        // Removed voice analytics logging
         const ttsResponse = await getTTSResponse(ephemeral, botResponse);
         const audioStream = await ttsResponse.blob();
         const audioUrl = URL.createObjectURL(audioStream);
