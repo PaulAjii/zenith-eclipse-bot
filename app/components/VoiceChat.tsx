@@ -8,7 +8,7 @@ import {
   getTTSResponse,
 } from '@/services/openapi';
 import { COMPANY_SYSTEM_PROMPT } from '@/utils/prompts';
-import { v4 as uuidv4 } from 'uuid';
+// import { v4 as uuidv4 } from 'uuid';
 
 interface ChatModalProps {
   onClose: () => void;
@@ -22,7 +22,7 @@ interface ChatModalProps {
 const VoiceChat = ({ onClose, userInfo }: ChatModalProps) => {
   const [isCalling, setIsCalling] = useState(false);
   const [isConnecting, setIsConnecting] = useState(false);
-  const [sessionId] = useState(() => uuidv4());
+  // const [sessionId] = useState(() => uuidv4());
 
   const peerRef = useRef<RTCPeerConnection | null>(null);
   const dataChannelRef = useRef<RTCDataChannel | null>(null);
