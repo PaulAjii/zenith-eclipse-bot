@@ -29,6 +29,7 @@ const VoiceChat = ({ onClose, userInfo }: ChatModalProps) => {
   const localStreamRef = useRef<MediaStream | null>(null);
 
   async function init() {
+    setIsConnecting(true);
     // Get Ephemeral Token
     const ephemeral = await getToken();
 
@@ -116,7 +117,6 @@ const VoiceChat = ({ onClose, userInfo }: ChatModalProps) => {
   }
 
   const handleCallStart = async () => {
-    setIsConnecting(true);
     await init();
   };
 
@@ -164,7 +164,7 @@ const VoiceChat = ({ onClose, userInfo }: ChatModalProps) => {
                 <em>Click the Call button to start call with the Bot.</em>
               </div>
               <button className="call__btn" onClick={handleCallStart} disabled={isConnecting}>
-                {isConnecting ? "Connecting" : "Call"}
+                {isConnecting ? "Connecting..." : "Call"}
               </button>
             </>
           )}
