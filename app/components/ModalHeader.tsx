@@ -1,10 +1,11 @@
 import Image from "next/image";
 
-interface ChatModalProps {
+interface ModalHeaderProps {
     onClose: () => void;
-  }
+    title?: string;
+}
 
-export default function ModalHeader({onClose}: ChatModalProps) {
+export default function ModalHeader({ onClose, title = "Zenith Eclipse Call" }: ModalHeaderProps) {
     return (
         <div className="modal-header">
             <div className="modal-title-container">
@@ -20,7 +21,7 @@ export default function ModalHeader({onClose}: ChatModalProps) {
                     target.style.display = 'none';
                     }}
                 />
-                <p className="modal-title">Zenith Eclipse Call</p>
+                <p className="modal-title">{title}</p>
             </div>
             <button 
                 className="close-button" 

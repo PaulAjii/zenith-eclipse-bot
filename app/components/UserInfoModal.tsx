@@ -2,9 +2,10 @@ import React, { useState } from 'react';
 
 interface UserInfoModalProps {
   onSubmit: (info: { fullname: string; email: string; phone?: string }) => void;
+  onClose?: () => void;
 }
 
-const UserInfoModal = ({ onSubmit }: UserInfoModalProps) => {
+const UserInfoModal = ({ onSubmit, onClose }: UserInfoModalProps) => {
   const [fullname, setFullname] = useState('');
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
@@ -24,9 +25,18 @@ const UserInfoModal = ({ onSubmit }: UserInfoModalProps) => {
     onSubmit({ fullname: fullname.trim(), email: email.trim(), phone: phone.trim() || undefined });
   };
 
+  const handleClose = () => {
+    if (onClose) {
+      onClose();
+    }
+  };
+
   return (
     <div className="notification-overlay">
       <div className="userinfo-modal-card" onClick={e => e.stopPropagation()}>
+        <button className="userinfo-close-btn" onClick={handleClose}>
+          &times;
+        </button>
         <div className="userinfo-modal-header">
           <h2>Welcome!</h2>
           <p className="userinfo-modal-subtitle">Please enter your details to continue</p>
@@ -87,6 +97,27 @@ const UserInfoModal = ({ onSubmit }: UserInfoModalProps) => {
           align-items: stretch;
           position: relative;
         }
+        .userinfo-close-btn {
+          position: absolute;
+          top: 1rem;
+          right: 1rem;
+          background: none;
+          border: none;
+          font-size: 1.5rem;
+          color: #888;
+          cursor: pointer;
+          width: 30px;
+          height: 30px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          border-radius: 50%;
+          transition: background-color 0.2s, color 0.2s;
+        }
+        .userinfo-close-btn:hover {
+          background-color: rgba(255, 59, 59, 0.1);
+          color: #ff3b3b;
+        }
         .userinfo-modal-header {
           text-align: center;
           margin-bottom: 1.5rem;
@@ -95,6 +126,7 @@ const UserInfoModal = ({ onSubmit }: UserInfoModalProps) => {
           margin: 0 0 0.25rem 0;
           font-size: 2rem;
           font-weight: 700;
+          color: #003366;
         }
         .userinfo-modal-subtitle {
           color: #666;
@@ -117,7 +149,7 @@ const UserInfoModal = ({ onSubmit }: UserInfoModalProps) => {
           margin-bottom: 0.1rem;
         }
         .userinfo-form-group .required {
-          color: #e74c3c;
+          color: #ff3b3b;
           font-size: 1em;
         }
         .userinfo-form-group .optional {
@@ -134,19 +166,19 @@ const UserInfoModal = ({ onSubmit }: UserInfoModalProps) => {
           background: #fafbfc;
         }
         .userinfo-input:focus {
-          border: 1.5px solid #0070f3;
-          box-shadow: 0 0 0 2px #0070f320;
+          border: 1.5px solid #003366;
+          box-shadow: 0 0 0 2px rgba(0, 51, 102, 0.2);
           background: #fff;
         }
         .userinfo-form-error {
-          color: #e74c3c;
+          color: #ff3b3b;
           font-size: 0.98rem;
           margin-bottom: 0.5rem;
           text-align: center;
         }
         .userinfo-submit-btn {
           margin-top: 0.5rem;
-          background: linear-gradient(90deg, #0070f3 60%, #0051a8 100%);
+          background: #003366;
           color: #fff;
           border: none;
           border-radius: 8px;
@@ -154,12 +186,12 @@ const UserInfoModal = ({ onSubmit }: UserInfoModalProps) => {
           font-size: 1.1rem;
           font-weight: 600;
           cursor: pointer;
-          box-shadow: 0 2px 8px rgba(0,112,243,0.08);
+          box-shadow: 0 2px 8px rgba(0, 51, 102, 0.08);
           transition: background 0.2s, box-shadow 0.2s;
         }
         .userinfo-submit-btn:hover, .userinfo-submit-btn:focus {
-          background: linear-gradient(90deg, #0051a8 0%, #0070f3 100%);
-          box-shadow: 0 4px 16px rgba(0,112,243,0.13);
+          background: #004080;
+          box-shadow: 0 4px 16px rgba(0, 51, 102, 0.13);
         }
       `}</style>
     </div>

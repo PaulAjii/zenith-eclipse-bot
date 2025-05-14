@@ -7,6 +7,7 @@ import ChatBubble from './ChatBubble';
 import LoadingBubble from './LoadingBubble';
 import ActionButtons from './ActionButtons';
 import NotificationModal from './NotificationModal';
+import ModalHeader from './ModalHeader';
 import { v4 as uuidv4 } from 'uuid';
 
 interface ChatModalProps {
@@ -16,6 +17,7 @@ interface ChatModalProps {
     email: string;
     phone?: string;
   };
+  embedded?: boolean;
 }
 
 // Define error types for better error handling
@@ -27,7 +29,7 @@ interface ErrorState {
   message: string;
 }
 
-const ChatModal = ({ onClose, userInfo }: ChatModalProps) => {
+const ChatModal = ({ onClose, userInfo, embedded = false }: ChatModalProps) => {
   const [isLoading, setIsLoading] = useState(false);
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
@@ -281,33 +283,83 @@ const ChatModal = ({ onClose, userInfo }: ChatModalProps) => {
     setError({ ...error, show: false });
   };
 
-  return (
+  return embedded ? (
+    <>
+      <div className={`chat__container modal-chat ${embedded ? 'embedded' : ''}`} ref={chatContainerRef}>
+        {messages.map((message, index) => (
+          <div 
+            key={`message-${index}`}
+            ref={index === messages.length - 1 ? lastMessageRef : undefined}
+          >
+            <ChatBubble
+              content={message.content}
+              role={message.role}
+            />
+          </div>
+        ))}
+        {isLoading && <LoadingBubble />}
+      </div>
+      
+      <div className="input__container modal-input">
+        <form onSubmit={(e) => handleSubmit(e, input)}>
+          <textarea
+            ref={inputRef}
+            placeholder="Ask me anything..."
+            className="input__field"
+            autoComplete="off"
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            disabled={isLoading}
+            maxLength={MAX_INPUT_LENGTH}
+            aria-label="Chat input"
+            rows={1}
+            onInput={(e) => {
+              const target = e.target as HTMLTextAreaElement;
+              // Reset height to auto to accurately calculate new height
+              target.style.height = 'auto';
+              // Set new height based on scrollHeight with a small buffer
+              target.style.height = `${target.scrollHeight}px`;
+            }}
+          />
+          <div className="input-info">
+            {input.length > 0 && (
+              <span className={`character-count ${input.length > MAX_INPUT_LENGTH * 0.8 ? 'warning' : ''}`}>
+                {input.length}/{MAX_INPUT_LENGTH}
+              </span>
+            )}
+          </div>
+          <button
+            type="submit"
+            className={`submit__button ${isLoading || !input.trim() ? 'disabled' : ''}`}
+            disabled={isLoading || !input.trim()}
+            aria-label="Send message"
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M22 2L11 13" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+              <path d="M22 2L15 22L11 13L2 9L22 2Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+            </svg>
+          </button>
+        </form>
+
+        <ActionButtons 
+          onClearChat={handleClearChat}
+          onExportChat={handleExportChat}
+          isLoading={isLoading}
+        />
+      </div>
+
+      {error.show && (
+        <NotificationModal
+          title={error.type === 'input' ? 'Input Error' : 'Connection Error'}
+          message={error.message}
+          onClose={closeErrorModal}
+        />
+      )}
+    </>
+  ) : (
     <div className="modal-overlay">
       <div className="chat-modal">
-        <div className="modal-header">
-          <div className="modal-title-container">
-            <Image 
-              src="/images/Zenith-Eclipse-Logo.webp" 
-              alt="Zenith Eclipse Logo" 
-              width={30} 
-              height={30}
-              className="modal-logo"
-              onError={(e) => {
-                // Fallback if image fails to load
-                const target = e.target as HTMLImageElement;
-                target.style.display = 'none';
-              }}
-            />
-            <p className="modal-title">Zenith Eclipse Chat</p>
-          </div>
-          <button 
-            className="close-button" 
-            onClick={onClose}
-            aria-label="Close chat"
-          >
-            &times;
-          </button>
-        </div>
+        <ModalHeader onClose={onClose} title="Zenith Eclipse Chat" />
         
         <div className="chat__container modal-chat" ref={chatContainerRef}>
           {messages.map((message, index) => (

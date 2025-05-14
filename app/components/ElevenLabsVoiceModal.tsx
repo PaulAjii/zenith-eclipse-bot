@@ -8,11 +8,12 @@ interface ElevenLabsVoiceModalProps {
     email: string;
     phone?: string;
   };
+  embedded?: boolean;
 }
 
 const AGENT_ID = 'q7i77JRrMBcBO8sHiKjN';
 
-export default function ElevenLabsVoiceModal({ onClose, userInfo }: ElevenLabsVoiceModalProps) {
+export default function ElevenLabsVoiceModal({ onClose, userInfo, embedded = false }: ElevenLabsVoiceModalProps) {
   const widgetContainerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -20,12 +21,22 @@ export default function ElevenLabsVoiceModal({ onClose, userInfo }: ElevenLabsVo
     if (widgetContainerRef.current) {
       widgetContainerRef.current.innerHTML = '';
     }
+    
     // Create the widget element
     const widget = document.createElement('elevenlabs-convai');
     widget.setAttribute('agent-id', AGENT_ID);
     widget.setAttribute('dynamic-variables', JSON.stringify({ fullname: userInfo.fullname }));
-    widget.style.width = '100%';
-    widget.style.minHeight = '400px';
+    
+    if (embedded) {
+      widget.style.width = '100%';
+      widget.style.height = '100%';
+      widget.style.minHeight = '400px';
+      widget.style.display = 'block';
+    } else {
+      widget.style.width = '100%';
+      widget.style.minHeight = '400px';
+    }
+    
     widgetContainerRef.current?.appendChild(widget);
 
     // Inject the script if not already present
@@ -37,13 +48,15 @@ export default function ElevenLabsVoiceModal({ onClose, userInfo }: ElevenLabsVo
       script.id = 'elevenlabs-widget-script';
       document.body.appendChild(script);
     }
-  }, [userInfo.fullname]);
+  }, [userInfo.fullname, embedded]);
 
-  return (
+  return embedded ? (
+    <div ref={widgetContainerRef} style={{ width: '100%', height: '100%', flex: 1, minHeight: 400, overflow: 'hidden' }} />
+  ) : (
     <div className="modal-overlay">
-      <div className="chat-modal" style={{ maxWidth: 420, minHeight: 480 }}>
-        <ModalHeader onClose={onClose} />
-        <div ref={widgetContainerRef} style={{ width: '100%', minHeight: 400, marginTop: 16 }} />
+      <div className="chat-modal">
+        <ModalHeader onClose={onClose} title="Zenith Eclipse Call" />
+        <div ref={widgetContainerRef} style={{ width: '100%', flex: 1, minHeight: 400, overflow: 'hidden' }} />
       </div>
     </div>
   );

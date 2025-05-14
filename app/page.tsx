@@ -4,14 +4,14 @@ import { useState } from 'react';
 import Image from 'next/image';
 import ChatModal from './components/ChatModal';
 import ElevenLabsVoiceModal from './components/ElevenLabsVoiceModal';
-import { useRouter } from 'next/navigation';
+import VoiceChat from './components/VoiceChat';
 import { UserInfoProvider, useUserInfo } from './components/UserInfoContext';
 import UserInfoModal from './components/UserInfoModal';
 
 function HomePageContent() {
-  const [showChatModal, setShowChatModal] = useState(false);
-  const [showCallModal, setShowCallModal] = useState(false);
-  const router = useRouter();
+  const [showChat, setShowChat] = useState(false);
+  const [showCall, setShowCall] = useState(false);
+  const [useElevenLabs, setUseElevenLabs] = useState(true); // Toggle between ElevenLabs and custom voice
   const { userInfo, setUserInfo } = useUserInfo();
   const [pendingAction, setPendingAction] = useState<'chat' | 'call' | null>(null);
 
@@ -19,71 +19,44 @@ function HomePageContent() {
     if (!userInfo) {
       setPendingAction('chat');
     } else {
-    setShowChatModal(true);
+      setShowChat(true);
+      setShowCall(false);
     }
   };
 
   const handleCloseChat = () => {
-    setShowChatModal(false);
+    setShowChat(false);
   };
 
-  const handleCallModal = () => {
+  const handleCallClick = () => {
     if (!userInfo) {
       setPendingAction('call');
     } else {
-    setShowCallModal(true);
+      setShowCall(true);
+      setShowChat(false);
     }
   };
 
-  const handleCloseCallModal = () => {
-    setShowCallModal(false);
+  const handleCloseCall = () => {
+    setShowCall(false);
   };
 
-  const handleAnalyticsClick = () => {
-    router.push('/analytics');
+  const handleCloseUserInfo = () => {
+    setPendingAction(null);
   };
 
   const handleUserInfoSubmit = (info: { fullname: string; email: string; phone?: string }) => {
     setUserInfo(info);
     if (pendingAction === 'chat') {
-      setShowChatModal(true);
+      setShowChat(true);
     } else if (pendingAction === 'call') {
-      setShowCallModal(true);
+      setShowCall(true);
     }
     setPendingAction(null);
   };
 
   return (
     <div className="home-page">
-      <header className="site-header">
-        <div className="logo-container">
-          <Image
-            src="/images/Zenith-Eclipse-Logo.webp"
-            alt="Zenith Eclipse Logo"
-            width={60}
-            height={60}
-            className="logo-image"
-          />
-          <div className="logo-text">
-            <div className="logo-name">ZENITH ECLIPSE</div>
-            <div className="logo-co">CO</div>
-          </div>
-        </div>
-        <div className="header-nav">
-          <button className="analytics-link" onClick={handleAnalyticsClick}>
-            <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" strokeWidth="2" fill="none">
-              <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h7"></path>
-              <line x1="16" y1="5" x2="22" y2="5"></line>
-              <line x1="19" y1="2" x2="19" y2="8"></line>
-              <line x1="12" y1="8" x2="12" y2="16"></line>
-              <line x1="8" y1="12" x2="8" y2="16"></line>
-              <line x1="16" y1="12" x2="16" y2="16"></line>
-            </svg>
-            ANALYTICS
-          </button>
-        </div>
-      </header>
-
       <main className="home-content">
         <div className="welcome-container">
           <h1 className="welcome-title">
@@ -100,7 +73,7 @@ function HomePageContent() {
         </div>
 
         <div className="contact-options">
-          <button className="call-button" onClick={handleCallModal}>
+          <button className="call-button" onClick={handleCallClick}>
             <svg
               className="phone-icon"
               viewBox="0 0 24 24"
@@ -135,12 +108,70 @@ function HomePageContent() {
             CHAT
           </button>
         </div>
+
+        {showChat && userInfo && (
+          <div className="embedded-chat-container">
+            <div className="embedded-header">
+              <div className="modal-title-container">
+                <Image 
+                  src="/images/Zenith-Eclipse-Logo.webp" 
+                  alt="Zenith Eclipse Logo" 
+                  width={30} 
+                  height={30}
+                  className="modal-logo"
+                />
+                <p className="modal-title">Zenith Eclipse Chat</p>
+              </div>
+              <button 
+                className="close-button" 
+                onClick={handleCloseChat}
+                aria-label="Close chat"
+              >
+                &times;
+              </button>
+            </div>
+            <div className="embedded-content">
+              <ChatModal onClose={handleCloseChat} userInfo={userInfo} embedded={true} />
+            </div>
+          </div>
+        )}
+
+        {showCall && userInfo && (
+          <div className="embedded-call-container">
+            <div className="embedded-header">
+              <div className="modal-title-container">
+                <Image 
+                  src="/images/Zenith-Eclipse-Logo.webp" 
+                  alt="Zenith Eclipse Logo" 
+                  width={30} 
+                  height={30}
+                  className="modal-logo"
+                />
+                <p className="modal-title">Zenith Eclipse Call</p>
+              </div>
+              <button 
+                className="close-button" 
+                onClick={handleCloseCall}
+                aria-label="Close call"
+              >
+                &times;
+              </button>
+            </div>
+            <div className="embedded-content">
+              {useElevenLabs ? (
+                <div className="elevenlabs-container">
+                  <ElevenLabsVoiceModal onClose={handleCloseCall} userInfo={userInfo} embedded={true} />
+                </div>
+              ) : (
+                <VoiceChat onClose={handleCloseCall} userInfo={userInfo} embedded={true} />
+              )}
+            </div>
+          </div>
+        )}
       </main>
 
-      {showChatModal && userInfo && <ChatModal onClose={handleCloseChat} userInfo={userInfo} />}
-      {showCallModal && userInfo && <ElevenLabsVoiceModal onClose={handleCloseCallModal} userInfo={userInfo} />}
       {pendingAction && !userInfo && (
-        <UserInfoModal onSubmit={handleUserInfoSubmit} />
+        <UserInfoModal onSubmit={handleUserInfoSubmit} onClose={handleCloseUserInfo} />
       )}
     </div>
   );
